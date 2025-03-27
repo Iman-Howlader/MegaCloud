@@ -20,26 +20,37 @@ from storage_providers.dropbox import DropboxProvider
 # Load environment variables
 load_dotenv()
 
-# Configure logging
+# Configure logging to stdout for Render
 logging.basicConfig(
     level=logging.INFO,
-    filename='telegram_bot.log',
-    filemode='a',
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
-# Initialize storage providers
+# Flask app
+app = Flask(__name__)
+
+# Initialize storage providers using environment variables
 try:
-    with open("config/dropbox_tokens.json") as f:
-        dropbox_tokens = json.load(f)
+    dropbox_token_1 = json.loads(os.getenv('DROPBOX_TOKEN_1'))
+    dropbox_token_2 = json.loads(os.getenv('DROPBOX_TOKEN_2'))
+    google_cred_user1 = os.getenv('GOOGLE_CRED_USER1')
+    google_cred_user2 = os.getenv('GOOGLE_CRED_USER2')
+    google_cred_user3 = os.getenv('GOOGLE_CRED_USER3')
+
+    # Write Google credentials to temp files
+    def create_temp_json(data, prefix):
+        temp_file = tempfile.NamedTemporaryFile(mode='w', prefix=prefix, suffix='.json', delete=False)
+        json.dump(json.loads(data), temp_file)
+        temp_file.close()
+        return temp_file.name
 
     storage_providers = [
-        GoogleDriveProvider("config/credentials_user1.json", "1F2oxw2W4o1MAL0iQdVkzCc2Zjw4z5XoM"),
-        GoogleDriveProvider("config/credentials_user2.json", "1SQGF0uGOGHJTSJvdbCnRm8cQdftMZbUy"),
-        GoogleDriveProvider("config/credentials_user3.json", "1ZyNqPeaOkZC2uVWDnlLKg6QuEF5JOMUA"),
-        DropboxProvider(dropbox_tokens["dropbox_token_1"], "/MegaCloud01"),
-        DropboxProvider(dropbox_tokens["dropbox_token_2"], "/MegaCloud02"),
+        GoogleDriveProvider(create_temp_json(google_cred_user1, 'user1'), "1F2oxw2W4o1MAL0iQdVkzCc2Zjw4z5XoM"),
+        GoogleDriveProvider(create_temp_json(google_cred_user2, 'user2'), "1SQGF0uGOGHJTSJvdbCnRm8cQdftMZbUy"),
+        GoogleDriveProvider(create_temp_json(google_cred_user3, 'user3'), "1ZyNqPeaOkZC2uVWDnlLKg6QuEF5JOMUA"),
+        DropboxProvider(dropbox_token_1, "/MegaCloud01"),
+        DropboxProvider(dropbox_token_2, "/MegaCloud02"),
     ]
     file_manager = FileManager(storage_providers)
 except Exception as e:
@@ -73,11 +84,9 @@ async def show_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, mes
 async def check_auth(context: ContextTypes.DEFAULT_TYPE) -> bool:
     return context.user_data.get('logged_in', False)
 
-# Helper to get file by ID using existing get_files
 def get_file_by_id(file_id, email):
     logger.info(f"Looking for file with ID: {file_id} for email: {email}")
     files = File.get_files(email)
-    logger.info(f"Retrieved files: {files}")
     for file in files:
         if str(file['id']) == str(file_id):
             logger.info(f"Found file: {file}")
@@ -210,7 +219,6 @@ async def file_actions(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 
     if data.startswith('f_'):
         file_id = data.replace('f_', '')
-        logger.info(f"Processing file ID: {file_id}")
         file = get_file_by_id(file_id, context.user_data['email'])
         if not file:
             await query.answer("❌ File not found!", show_alert=True)
@@ -222,7 +230,6 @@ async def file_actions(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
         
         context.user_data['current_file_id'] = file_id
         filename = file['filename']
-        logger.info(f"Selected file: {filename} with ID: {file_id}")
         
         keyboard = [
             [
@@ -252,7 +259,6 @@ async def file_actions(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     elif data == 'main_menu':
         return await show_main_menu(update, context)
 
-    logger.warning(f"Unhandled callback data: {data}")
     return FILE_ACTIONS
 
 # Upload handlers
@@ -308,7 +314,7 @@ async def upload_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
         )
         return UPLOAD_FILE
 
-# File operations (Enhanced Back flow after Preview)
+# File operations
 async def preview_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     file_id = context.user_data.get('current_file_id')
     if not file_id:
@@ -321,13 +327,11 @@ async def preview_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
             await update.callback_query.answer("❌ File not found!", show_alert=True)
             return FILE_ACTIONS
         filename = file['filename']
-        logger.info(f"Previewing file: {filename}")
 
         temp_path = os.path.join(tempfile.gettempdir(), filename)
         file_manager.download_file(filename, file['chunk_ids'], temp_path)
         mime_type, _ = mimetypes.guess_type(temp_path)
         
-        # Enhanced keyboard with full options after preview
         keyboard = [
             [
                 InlineKeyboardButton("👀 Preview", callback_data='preview'),
@@ -379,7 +383,6 @@ async def download_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
             await update.callback_query.answer("❌ File not found!", show_alert=True)
             return FILE_ACTIONS
         filename = file['filename']
-        logger.info(f"Downloading file: {filename}")
 
         temp_path = os.path.join(tempfile.gettempdir(), filename)
         file_manager.download_file(filename, file['chunk_ids'], temp_path)
@@ -420,7 +423,6 @@ async def delete_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
             await update.callback_query.answer("❌ File not found!", show_alert=True)
             return FILE_ACTIONS
         filename = file['filename']
-        logger.info(f"Deleting file: {filename}")
 
         file_manager.delete_file(filename, file['chunk_ids'], context.user_data['email'])
         user = User.get_user(context.user_data['email'])
@@ -458,9 +460,6 @@ async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         total_files = len(files)
         total_size = sum(f['size_mb'] for f in files)
         user = User.get_user(context.user_data['email'])
-
-        if not user:
-            raise Exception("User data not found")
 
         message = (
             f"📊 *Storage Stats*\n\n"
@@ -500,21 +499,31 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         return await show_main_menu(update, context, "✅ Cancelled. What's next?")
     await update.message.reply_text("✅ Cancelled. Use /start.", parse_mode='Markdown')
     return ConversationHandler.END
-app = Flask('')
 
+# Flask route
 @app.route('/')
 def home():
     return "Telegram Bot is alive!"
 
+# Run Flask in a thread
 def run_flask():
-    app.run(host='0.0.0.0', port=8080)
+    port = int(os.getenv('PORT', 8080))  # Render provides PORT env var
+    app.run(host='0.0.0.0', port=port)
 
-
-# Main function
+# Main function to start bot and Flask
 def main():
-    t = Thread(target=run_flask)
-    t.start()
-    application = Application.builder().token(os.getenv('TELEGRAM_BOT_TOKEN')).build()
+    # Start Flask in a separate thread
+    flask_thread = Thread(target=run_flask)
+    flask_thread.daemon = True  # Daemonize so it stops with main thread
+    flask_thread.start()
+
+    # Start Telegram bot
+    token = os.getenv('TELEGRAM_BOT_TOKEN')
+    if not token:
+        logger.error("TELEGRAM_BOT_TOKEN not set")
+        raise ValueError("TELEGRAM_BOT_TOKEN not set")
+    
+    application = Application.builder().token(token).build()
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
@@ -539,8 +548,6 @@ def main():
     
     logger.info("Starting Telegram bot...")
     application.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
-
-
 
 if __name__ == "__main__":
     main()

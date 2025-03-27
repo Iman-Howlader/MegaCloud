@@ -1,0 +1,163 @@
+2025-03-28 03:29:45,306 - __main__ - ERROR - Failed to initialize storage providers: [Errno 2] No such file or directory: 'config/dropbox_tokens.json'
+2025-03-28 03:49:05,712 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-03-28 03:49:05,750 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-03-28 03:49:05,787 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-03-28 03:49:05,789 - file_manager - INFO - Initialized FileManager with 5 providers
+2025-03-28 03:49:05,803 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8080
+ * Running on http://192.168.1.112:8080
+2025-03-28 03:49:05,803 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-03-28 03:49:05,812 - __main__ - INFO - Starting Telegram bot...
+2025-03-28 03:49:06,756 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getMe "HTTP/1.1 200 OK"
+2025-03-28 03:49:07,052 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/deleteWebhook "HTTP/1.1 200 OK"
+2025-03-28 03:49:07,053 - telegram.ext.Application - INFO - Application started
+2025-03-28 03:49:18,008 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:49:19,566 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:49:20,620 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/sendMessage "HTTP/1.1 200 OK"
+2025-03-28 03:49:29,308 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:49:34,681 - auth - INFO - OTP sent to imanhowlader321@gmail.com
+2025-03-28 03:49:35,861 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/sendMessage "HTTP/1.1 200 OK"
+2025-03-28 03:49:44,995 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:49:49,391 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:49:50,447 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/sendMessage "HTTP/1.1 200 OK"
+2025-03-28 03:49:54,591 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:49:54,593 - __main__ - INFO - Main menu triggered with data: list_files
+2025-03-28 03:49:54,594 - __main__ - INFO - Files retrieved for imanhowlader321@gmail.com: [{'id': 2, 'filename': 'Global inequality.pdf', 'chunk_ids': [{'provider_id': 1, 'chunk_number': 0, 'chunk_path': '1INmJY2Y_hZ6lb0aWuyOTXWd_C7OvE_ST', 'chunk_hash': 'placeholder'}, {'provider_id': 2, 'chunk_number': 1, 'chunk_path': '1GF0UaFkQPWdU8iKNO_EinrxMUNw_wXSt', 'chunk_hash': 'placeholder'}, {'provider_id': 3, 'chunk_number': 2, 'chunk_path': '1lnBtpn_FvbLsQaK04RWdXTNO3FR82bpo', 'chunk_hash': 'placeholder'}, {'provider_id': 4, 'chunk_number': 3, 'chunk_path': '/MegaCloud01/imanhowlader321@gmail.com/Global inequality.pdf/chunk_3', 'chunk_hash': 'placeholder'}, {'provider_id': 5, 'chunk_number': 4, 'chunk_path': '/MegaCloud02/imanhowlader321@gmail.com/Global inequality.pdf/chunk_4', 'chunk_hash': 'placeholder'}], 'size_mb': 0.14763927459716797, 'category': 'Documents'}]
+2025-03-28 03:49:55,059 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/editMessageText "HTTP/1.1 200 OK"
+2025-03-28 03:49:59,291 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:49:59,292 - __main__ - INFO - File actions triggered with data: main_menu
+2025-03-28 03:49:59,767 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/editMessageText "HTTP/1.1 200 OK"
+2025-03-28 03:50:02,644 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:50:02,646 - __main__ - INFO - Main menu triggered with data: upload
+2025-03-28 03:50:03,118 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/editMessageText "HTTP/1.1 200 OK"
+2025-03-28 03:50:12,928 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:50:23,215 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:50:33,501 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:50:43,780 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:50:51,258 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:50:52,938 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getFile "HTTP/1.1 200 OK"
+2025-03-28 03:50:53,264 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/sendMessage "HTTP/1.1 400 Bad Request"
+2025-03-28 03:50:53,265 - __main__ - ERROR - Upload error: Can't parse entities: can't find end of the entity starting at byte offset 20
+2025-03-28 03:50:53,734 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/sendMessage "HTTP/1.1 200 OK"
+2025-03-28 03:51:01,538 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:51:04,137 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:51:05,194 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/sendMessage "HTTP/1.1 200 OK"
+2025-03-28 03:51:06,808 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:51:06,809 - __main__ - INFO - Main menu triggered with data: upload
+2025-03-28 03:51:07,275 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/editMessageText "HTTP/1.1 200 OK"
+2025-03-28 03:51:13,701 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:51:14,707 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/sendMessage "HTTP/1.1 200 OK"
+2025-03-28 03:51:16,607 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:51:16,609 - __main__ - INFO - Main menu triggered with data: list_files
+2025-03-28 03:51:16,610 - __main__ - INFO - Files retrieved for imanhowlader321@gmail.com: [{'id': 2, 'filename': 'Global inequality.pdf', 'chunk_ids': [{'provider_id': 1, 'chunk_number': 0, 'chunk_path': '1INmJY2Y_hZ6lb0aWuyOTXWd_C7OvE_ST', 'chunk_hash': 'placeholder'}, {'provider_id': 2, 'chunk_number': 1, 'chunk_path': '1GF0UaFkQPWdU8iKNO_EinrxMUNw_wXSt', 'chunk_hash': 'placeholder'}, {'provider_id': 3, 'chunk_number': 2, 'chunk_path': '1lnBtpn_FvbLsQaK04RWdXTNO3FR82bpo', 'chunk_hash': 'placeholder'}, {'provider_id': 4, 'chunk_number': 3, 'chunk_path': '/MegaCloud01/imanhowlader321@gmail.com/Global inequality.pdf/chunk_3', 'chunk_hash': 'placeholder'}, {'provider_id': 5, 'chunk_number': 4, 'chunk_path': '/MegaCloud02/imanhowlader321@gmail.com/Global inequality.pdf/chunk_4', 'chunk_hash': 'placeholder'}], 'size_mb': 0.14763927459716797, 'category': 'Documents'}]
+2025-03-28 03:51:17,054 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/editMessageText "HTTP/1.1 200 OK"
+2025-03-28 03:51:23,773 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:51:23,776 - __main__ - INFO - File actions triggered with data: main_menu
+2025-03-28 03:51:24,847 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/editMessageText "HTTP/1.1 200 OK"
+2025-03-28 03:51:26,520 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:51:26,522 - __main__ - INFO - Main menu triggered with data: list_files
+2025-03-28 03:51:26,523 - __main__ - INFO - Files retrieved for imanhowlader321@gmail.com: [{'id': 2, 'filename': 'Global inequality.pdf', 'chunk_ids': [{'provider_id': 1, 'chunk_number': 0, 'chunk_path': '1INmJY2Y_hZ6lb0aWuyOTXWd_C7OvE_ST', 'chunk_hash': 'placeholder'}, {'provider_id': 2, 'chunk_number': 1, 'chunk_path': '1GF0UaFkQPWdU8iKNO_EinrxMUNw_wXSt', 'chunk_hash': 'placeholder'}, {'provider_id': 3, 'chunk_number': 2, 'chunk_path': '1lnBtpn_FvbLsQaK04RWdXTNO3FR82bpo', 'chunk_hash': 'placeholder'}, {'provider_id': 4, 'chunk_number': 3, 'chunk_path': '/MegaCloud01/imanhowlader321@gmail.com/Global inequality.pdf/chunk_3', 'chunk_hash': 'placeholder'}, {'provider_id': 5, 'chunk_number': 4, 'chunk_path': '/MegaCloud02/imanhowlader321@gmail.com/Global inequality.pdf/chunk_4', 'chunk_hash': 'placeholder'}], 'size_mb': 0.14763927459716797, 'category': 'Documents'}]
+2025-03-28 03:51:26,993 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/editMessageText "HTTP/1.1 200 OK"
+2025-03-28 03:51:28,712 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:51:28,714 - __main__ - INFO - File actions triggered with data: f_2
+2025-03-28 03:51:28,714 - __main__ - INFO - Looking for file with ID: 2 for email: imanhowlader321@gmail.com
+2025-03-28 03:51:28,715 - __main__ - INFO - Found file: {'id': 2, 'filename': 'Global inequality.pdf', 'chunk_ids': [{'provider_id': 1, 'chunk_number': 0, 'chunk_path': '1INmJY2Y_hZ6lb0aWuyOTXWd_C7OvE_ST', 'chunk_hash': 'placeholder'}, {'provider_id': 2, 'chunk_number': 1, 'chunk_path': '1GF0UaFkQPWdU8iKNO_EinrxMUNw_wXSt', 'chunk_hash': 'placeholder'}, {'provider_id': 3, 'chunk_number': 2, 'chunk_path': '1lnBtpn_FvbLsQaK04RWdXTNO3FR82bpo', 'chunk_hash': 'placeholder'}, {'provider_id': 4, 'chunk_number': 3, 'chunk_path': '/MegaCloud01/imanhowlader321@gmail.com/Global inequality.pdf/chunk_3', 'chunk_hash': 'placeholder'}, {'provider_id': 5, 'chunk_number': 4, 'chunk_path': '/MegaCloud02/imanhowlader321@gmail.com/Global inequality.pdf/chunk_4', 'chunk_hash': 'placeholder'}], 'size_mb': 0.14763927459716797, 'category': 'Documents'}
+2025-03-28 03:51:29,202 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/editMessageText "HTTP/1.1 200 OK"
+2025-03-28 03:51:34,139 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:51:34,140 - __main__ - INFO - File actions triggered with data: list_files
+2025-03-28 03:51:34,141 - __main__ - INFO - Files retrieved for imanhowlader321@gmail.com: [{'id': 2, 'filename': 'Global inequality.pdf', 'chunk_ids': [{'provider_id': 1, 'chunk_number': 0, 'chunk_path': '1INmJY2Y_hZ6lb0aWuyOTXWd_C7OvE_ST', 'chunk_hash': 'placeholder'}, {'provider_id': 2, 'chunk_number': 1, 'chunk_path': '1GF0UaFkQPWdU8iKNO_EinrxMUNw_wXSt', 'chunk_hash': 'placeholder'}, {'provider_id': 3, 'chunk_number': 2, 'chunk_path': '1lnBtpn_FvbLsQaK04RWdXTNO3FR82bpo', 'chunk_hash': 'placeholder'}, {'provider_id': 4, 'chunk_number': 3, 'chunk_path': '/MegaCloud01/imanhowlader321@gmail.com/Global inequality.pdf/chunk_3', 'chunk_hash': 'placeholder'}, {'provider_id': 5, 'chunk_number': 4, 'chunk_path': '/MegaCloud02/imanhowlader321@gmail.com/Global inequality.pdf/chunk_4', 'chunk_hash': 'placeholder'}], 'size_mb': 0.14763927459716797, 'category': 'Documents'}]
+2025-03-28 03:51:34,655 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/editMessageText "HTTP/1.1 200 OK"
+2025-03-28 03:51:36,219 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:51:36,221 - __main__ - INFO - File actions triggered with data: main_menu
+2025-03-28 03:51:36,704 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/editMessageText "HTTP/1.1 200 OK"
+2025-03-28 03:51:38,340 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:51:38,342 - __main__ - INFO - Main menu triggered with data: stats
+2025-03-28 03:51:38,817 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/editMessageText "HTTP/1.1 200 OK"
+2025-03-28 03:51:40,827 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:51:40,828 - __main__ - INFO - Main menu triggered with data: main_menu
+2025-03-28 03:51:41,299 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/editMessageText "HTTP/1.1 200 OK"
+2025-03-28 03:51:47,221 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:51:47,222 - __main__ - INFO - Main menu triggered with data: upload
+2025-03-28 03:51:48,281 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/editMessageText "HTTP/1.1 200 OK"
+2025-03-28 03:51:57,502 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:52:07,782 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:52:18,069 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:52:28,424 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:52:38,704 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:52:48,999 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:52:59,281 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:53:09,559 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:53:19,840 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:53:30,119 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:53:34,247 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:53:35,441 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getFile "HTTP/1.1 200 OK"
+2025-03-28 03:53:35,904 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/sendMessage "HTTP/1.1 200 OK"
+2025-03-28 03:53:36,459 - httpx - INFO - HTTP Request: GET https://api.telegram.org/file/bot8044106650%3AAAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/documents/file_9.pdf "HTTP/1.1 200 OK"
+2025-03-28 03:53:37,023 - file_manager - INFO - Starting upload for Office Hours-1.pdf by imanhowlader321@gmail.com, size: 110102 bytes
+2025-03-28 03:53:37,035 - file_manager - INFO - Created chunk 0 at chunk_0_Office Hours-1.pdf
+2025-03-28 03:53:37,036 - file_manager - INFO - Created chunk 1 at chunk_1_Office Hours-1.pdf
+2025-03-28 03:53:37,036 - file_manager - INFO - Created chunk 2 at chunk_2_Office Hours-1.pdf
+2025-03-28 03:53:37,038 - file_manager - INFO - Created chunk 3 at chunk_3_Office Hours-1.pdf
+2025-03-28 03:53:37,038 - file_manager - INFO - Created chunk 4 at chunk_4_Office Hours-1.pdf
+2025-03-28 03:53:37,038 - file_manager - INFO - Uploading chunk 0 to GoogleDriveProvider
+2025-03-28 03:53:39,694 - file_manager - INFO - Chunk 0 uploaded, chunk_id: 14qDQhhFs1Cfd2bT4MCmdNwjOfDMpYuk8
+2025-03-28 03:53:39,695 - file_manager - INFO - Deleted chunk 0: chunk_0_Office Hours-1.pdf
+2025-03-28 03:53:39,695 - file_manager - INFO - Uploading chunk 1 to GoogleDriveProvider
+2025-03-28 03:53:42,473 - file_manager - INFO - Chunk 1 uploaded, chunk_id: 1nyn77pV-0n4S7xesoSo5eq69dV-cDpAV
+2025-03-28 03:53:42,473 - file_manager - INFO - Deleted chunk 1: chunk_1_Office Hours-1.pdf
+2025-03-28 03:53:42,473 - file_manager - INFO - Uploading chunk 2 to GoogleDriveProvider
+2025-03-28 03:53:45,370 - file_manager - INFO - Chunk 2 uploaded, chunk_id: 1t7PDhlua_bUPtNUZA6P6usgij67R6ETV
+2025-03-28 03:53:45,371 - file_manager - INFO - Deleted chunk 2: chunk_2_Office Hours-1.pdf
+2025-03-28 03:53:45,371 - file_manager - INFO - Uploading chunk 3 to DropboxProvider
+2025-03-28 03:53:45,381 - dropbox - INFO - Refreshing access token.
+2025-03-28 03:53:45,898 - dropbox - INFO - Request to files/upload
+2025-03-28 03:53:46,916 - file_manager - INFO - Chunk 3 uploaded, chunk_id: /MegaCloud01/imanhowlader321@gmail.com/Office Hours-1.pdf/chunk_3
+2025-03-28 03:53:46,917 - file_manager - INFO - Deleted chunk 3: chunk_3_Office Hours-1.pdf
+2025-03-28 03:53:46,917 - file_manager - INFO - Uploading chunk 4 to DropboxProvider
+2025-03-28 03:53:46,930 - dropbox - INFO - Refreshing access token.
+2025-03-28 03:53:47,367 - dropbox - INFO - Request to files/upload
+2025-03-28 03:53:49,299 - file_manager - INFO - Chunk 4 uploaded, chunk_id: /MegaCloud02/imanhowlader321@gmail.com/Office Hours-1.pdf/chunk_4
+2025-03-28 03:53:49,300 - file_manager - INFO - Deleted chunk 4: chunk_4_Office Hours-1.pdf
+2025-03-28 03:53:49,305 - file_manager - INFO - File Office Hours-1.pdf saved to database
+2025-03-28 03:53:49,312 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:53:50,541 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/sendMessage "HTTP/1.1 200 OK"
+2025-03-28 03:53:50,545 - __main__ - INFO - Files retrieved for imanhowlader321@gmail.com: [{'id': 2, 'filename': 'Global inequality.pdf', 'chunk_ids': [{'provider_id': 1, 'chunk_number': 0, 'chunk_path': '1INmJY2Y_hZ6lb0aWuyOTXWd_C7OvE_ST', 'chunk_hash': 'placeholder'}, {'provider_id': 2, 'chunk_number': 1, 'chunk_path': '1GF0UaFkQPWdU8iKNO_EinrxMUNw_wXSt', 'chunk_hash': 'placeholder'}, {'provider_id': 3, 'chunk_number': 2, 'chunk_path': '1lnBtpn_FvbLsQaK04RWdXTNO3FR82bpo', 'chunk_hash': 'placeholder'}, {'provider_id': 4, 'chunk_number': 3, 'chunk_path': '/MegaCloud01/imanhowlader321@gmail.com/Global inequality.pdf/chunk_3', 'chunk_hash': 'placeholder'}, {'provider_id': 5, 'chunk_number': 4, 'chunk_path': '/MegaCloud02/imanhowlader321@gmail.com/Global inequality.pdf/chunk_4', 'chunk_hash': 'placeholder'}], 'size_mb': 0.14763927459716797, 'category': 'Documents'}, {'id': 4, 'filename': 'Office Hours-1.pdf', 'chunk_ids': [{'provider_id': 1, 'chunk_number': 0, 'chunk_path': '14qDQhhFs1Cfd2bT4MCmdNwjOfDMpYuk8', 'chunk_hash': 'placeholder'}, {'provider_id': 2, 'chunk_number': 1, 'chunk_path': '1nyn77pV-0n4S7xesoSo5eq69dV-cDpAV', 'chunk_hash': 'placeholder'}, {'provider_id': 3, 'chunk_number': 2, 'chunk_path': '1t7PDhlua_bUPtNUZA6P6usgij67R6ETV', 'chunk_hash': 'placeholder'}, {'provider_id': 4, 'chunk_number': 3, 'chunk_path': '/MegaCloud01/imanhowlader321@gmail.com/Office Hours-1.pdf/chunk_3', 'chunk_hash': 'placeholder'}, {'provider_id': 5, 'chunk_number': 4, 'chunk_path': '/MegaCloud02/imanhowlader321@gmail.com/Office Hours-1.pdf/chunk_4', 'chunk_hash': 'placeholder'}], 'size_mb': 0.10500144958496094, 'category': 'Documents'}]
+2025-03-28 03:53:50,545 - __main__ - ERROR - List files error: 'NoneType' object has no attribute 'edit_message_text'
+2025-03-28 03:53:50,545 - __main__ - ERROR - Upload error: 'NoneType' object has no attribute 'edit_message_text'
+2025-03-28 03:53:50,994 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/sendMessage "HTTP/1.1 200 OK"
+2025-03-28 03:53:59,814 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:54:10,112 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:54:19,338 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:54:20,388 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/sendMessage "HTTP/1.1 200 OK"
+2025-03-28 03:54:23,170 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:54:23,172 - __main__ - INFO - Main menu triggered with data: list_files
+2025-03-28 03:54:23,173 - __main__ - INFO - Files retrieved for imanhowlader321@gmail.com: [{'id': 2, 'filename': 'Global inequality.pdf', 'chunk_ids': [{'provider_id': 1, 'chunk_number': 0, 'chunk_path': '1INmJY2Y_hZ6lb0aWuyOTXWd_C7OvE_ST', 'chunk_hash': 'placeholder'}, {'provider_id': 2, 'chunk_number': 1, 'chunk_path': '1GF0UaFkQPWdU8iKNO_EinrxMUNw_wXSt', 'chunk_hash': 'placeholder'}, {'provider_id': 3, 'chunk_number': 2, 'chunk_path': '1lnBtpn_FvbLsQaK04RWdXTNO3FR82bpo', 'chunk_hash': 'placeholder'}, {'provider_id': 4, 'chunk_number': 3, 'chunk_path': '/MegaCloud01/imanhowlader321@gmail.com/Global inequality.pdf/chunk_3', 'chunk_hash': 'placeholder'}, {'provider_id': 5, 'chunk_number': 4, 'chunk_path': '/MegaCloud02/imanhowlader321@gmail.com/Global inequality.pdf/chunk_4', 'chunk_hash': 'placeholder'}], 'size_mb': 0.14763927459716797, 'category': 'Documents'}, {'id': 4, 'filename': 'Office Hours-1.pdf', 'chunk_ids': [{'provider_id': 1, 'chunk_number': 0, 'chunk_path': '14qDQhhFs1Cfd2bT4MCmdNwjOfDMpYuk8', 'chunk_hash': 'placeholder'}, {'provider_id': 2, 'chunk_number': 1, 'chunk_path': '1nyn77pV-0n4S7xesoSo5eq69dV-cDpAV', 'chunk_hash': 'placeholder'}, {'provider_id': 3, 'chunk_number': 2, 'chunk_path': '1t7PDhlua_bUPtNUZA6P6usgij67R6ETV', 'chunk_hash': 'placeholder'}, {'provider_id': 4, 'chunk_number': 3, 'chunk_path': '/MegaCloud01/imanhowlader321@gmail.com/Office Hours-1.pdf/chunk_3', 'chunk_hash': 'placeholder'}, {'provider_id': 5, 'chunk_number': 4, 'chunk_path': '/MegaCloud02/imanhowlader321@gmail.com/Office Hours-1.pdf/chunk_4', 'chunk_hash': 'placeholder'}], 'size_mb': 0.10500144958496094, 'category': 'Documents'}]
+2025-03-28 03:54:23,645 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/editMessageText "HTTP/1.1 200 OK"
+2025-03-28 03:54:29,623 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:54:29,624 - __main__ - INFO - File actions triggered with data: main_menu
+2025-03-28 03:54:30,803 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/editMessageText "HTTP/1.1 200 OK"
+2025-03-28 03:54:32,602 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:54:32,603 - __main__ - INFO - Main menu triggered with data: stats
+2025-03-28 03:54:33,065 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/editMessageText "HTTP/1.1 200 OK"
+2025-03-28 03:54:34,991 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:54:34,993 - __main__ - INFO - Main menu triggered with data: main_menu
+2025-03-28 03:54:35,449 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/editMessageText "HTTP/1.1 200 OK"
+2025-03-28 03:54:35,765 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:54:35,766 - __main__ - INFO - Main menu triggered with data: logout
+2025-03-28 03:54:36,224 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/editMessageText "HTTP/1.1 200 OK"
+2025-03-28 03:54:42,695 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:54:43,732 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/sendMessage "HTTP/1.1 200 OK"
+2025-03-28 03:54:52,993 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:55:03,276 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:55:13,553 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:55:23,838 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:55:34,120 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:55:44,397 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:55:54,713 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:56:05,041 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:56:15,334 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:56:25,625 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:56:35,920 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:56:46,195 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
+2025-03-28 03:56:56,521 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8044106650:AAFHMl52S7AzxNC_WR3GgbuACj0-MwWH5U0/getUpdates "HTTP/1.1 200 OK"
