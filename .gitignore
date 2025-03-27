@@ -1,0 +1,14 @@
+# Environment variables
+.env
+
+__pycache__/
+*.pyc
+
+# Logs and databases
+app.log
+megacloud.db
+megacloud.sqbpro
+
+.idea/
+
+downloads/

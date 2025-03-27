@@ -1,0 +1,9 @@
+flask==2.3.3
+python-dotenv==1.0.0
+python-telegram-bot==20.6
+google-auth-oauthlib==1.0.0
+google-auth-httplib2==0.1.0
+google-api-python-client==2.97.0
+dropbox==11.36.2
+sqlite3
+flask-login==0.6.2
