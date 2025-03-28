@@ -446,18 +446,20 @@ def index():
 
 @app.route('/request_otp', methods=['POST'])
 def request_otp():
-    data = request.get_json() or request.form  # Support JSON or form data
-    email = data.get('email')
+    data = request.form or request.get_json()
+    logger.info(f"Received request_otp data: {data}")
+    email = data.get('email') if data else None
     if not email:
-        logger.warning("No email provided in /request_otp")
-        return jsonify({"error": "Email is required"}), 400
-    success, message = AuthManager.register_or_login(email)
-    if success:
-        session['email'] = email
-        logger.info(f"OTP request successful for {email}")
-        return jsonify({"message": message}), 200
-    logger.error(f"OTP request failed for {email}: {message}")
-    return jsonify({"error": message}), 400
+        logger.error("No email provided in request_otp")
+        return "Email required", 400
+    user = User.get_user(email)
+    if not user:
+        user = User(email=email)
+    otp = user.generate_otp()
+    if user.save() and AuthManager.send_otp(email, otp):
+        return "OTP sent", 200
+    logger.error("Failed to save user or send OTP")
+    return "Failed to send OTP", 500
 
 @app.route('/verify_otp', methods=['POST'])
 def verify_otp():
