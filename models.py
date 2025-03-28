@@ -315,19 +315,30 @@ logger = logging.getLogger(__name__)
 # Load environment variables for Supabase
 load_dotenv()
 
-# PostgreSQL connection pool for Supabase
-db_pool = pool.SimpleConnectionPool(
-    1, 20,  # Min 1, max 20 connections
-    host=os.getenv('PGHOST'),
-    port=os.getenv('PGPORT'),
-    user=os.getenv('PGUSER'),
-    password=os.getenv('PGPASSWORD'),
-    database=os.getenv('PGDATABASE')
-)
+# Global variable for the connection pool, initialized lazily
+db_pool = None
+
+def initialize_db_pool():
+    global db_pool
+    if db_pool is None:
+        try:
+            db_pool = pool.SimpleConnectionPool(
+                1, 20,  # Min 1, max 20 connections
+                host=os.getenv('PGHOST'),
+                port=os.getenv('PGPORT'),
+                user=os.getenv('PGUSER'),
+                password=os.getenv('PGPASSWORD'),
+                database=os.getenv('PGDATABASE')
+            )
+            logger.info("Database pool initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize database pool: {e}")
+            raise
 
 class UserRepository:
     @staticmethod
     def get_db_connection():
+        initialize_db_pool()  # Ensure pool is ready
         conn = db_pool.getconn()
         return conn
 
@@ -364,6 +375,7 @@ class UserRepository:
                     )
                 ''')
                 conn.commit()
+                logger.info("Database tables initialized")
         except Exception as e:
             logger.error(f"Error initializing database: {e}")
         finally:
@@ -455,6 +467,7 @@ class User(UserMixin):
 class FileRepository:
     @staticmethod
     def get_db_connection():
+        initialize_db_pool()  # Ensure pool is ready
         conn = db_pool.getconn()
         return conn
 
@@ -619,5 +632,5 @@ class File:
     def delete_file(file_id):
         return FileRepository.delete_file(file_id)
 
-# Initialize the database
-UserRepository.init_db()
+# Initialize the database only when needed (e.g., first DB call), not at import
+# UserRepository.init_db()  # Uncomment if you want to force init on startup
