@@ -19,7 +19,7 @@ class AuthManager:
     SMTP_PORT = 587
     SENDER_EMAIL = os.getenv('SMTP_EMAIL')
     SENDER_PASSWORD = os.getenv('SMTP_PASSWORD')
-    SENDER_NAME = 'MegaCloud Bot'
+    SENDER_NAME = 'MegaCloud'
 
     @staticmethod
     def generate_otp(length=4):
