@@ -1,1 +1,2 @@
-python app.py
+web: gunicorn app:app
+worker: python telebot.py
