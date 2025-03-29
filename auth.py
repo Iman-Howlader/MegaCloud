@@ -3,6 +3,7 @@ import re
 import random
 import string
 from datetime import datetime, timedelta
+from typing import Optional, List, Dict
 import logging
 import smtplib
 from email.mime.text import MIMEText

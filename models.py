@@ -1,442 +1,90 @@
-# import sqlite3
-# from flask_login import UserMixin
-# from datetime import datetime, timedelta
-# import json
-# import logging
-# import tempfile
-# import os
-
-# # Configure logging
-# logging.basicConfig(level=logging.INFO, filename='app.log', filemode='a',
-#                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-# logger = logging.getLogger(__name__)
-
-# class UserRepository:
-#     @staticmethod
-#     def get_db_connection():
-#         # Use /tmp/ for deployment (e.g., Render), temp dir for local testing
-#         db_path = '/tmp/megacloud.db' if os.getenv('RENDER') else os.path.join(tempfile.gettempdir(), 'megacloud.db')
-#         conn = sqlite3.connect(db_path, timeout=10)
-#         conn.row_factory = sqlite3.Row
-#         return conn
-
-#     @staticmethod
-#     def init_db():
-#         conn = UserRepository.get_db_connection()
-#         cursor = conn.cursor()
-#         cursor.execute('''
-#             CREATE TABLE IF NOT EXISTS users (
-#                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-#                 email TEXT UNIQUE NOT NULL,
-#                 otp TEXT,
-#                 otp_expiry TEXT,
-#                 storage_used REAL DEFAULT 0.0
-#             )
-#         ''')
-#         cursor.execute('''
-#             CREATE TABLE IF NOT EXISTS files (
-#                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-#                 filename TEXT NOT NULL,
-#                 chunk_ids TEXT NOT NULL,
-#                 user_email TEXT NOT NULL,
-#                 size_mb REAL NOT NULL,
-#                 category TEXT,
-#                 FOREIGN KEY (user_email) REFERENCES users(email)
-#             )
-#         ''')
-#         conn.commit()
-#         conn.close()
-
-#     @staticmethod
-#     def get_user(email: str):
-#         try:
-#             conn = UserRepository.get_db_connection()
-#             cursor = conn.cursor()
-#             cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
-#             user_data = cursor.fetchone()
-#             conn.close()
-#             if user_data:
-#                 return User(
-#                     id=user_data['id'],
-#                     email=user_data['email'],
-#                     otp=user_data['otp'],
-#                     otp_expiry=user_data['otp_expiry'],
-#                     storage_used=user_data['storage_used']
-#                 )
-#             return None
-#         except Exception as e:
-#             logger.error(f"Error getting user: {e}")
-#             return None
-
-#     @staticmethod
-#     def save_user(user):
-#         try:
-#             conn = UserRepository.get_db_connection()
-#             cursor = conn.cursor()
-#             if user.id:
-#                 cursor.execute(
-#                     "UPDATE users SET email = ?, otp = ?, otp_expiry = ?, storage_used = ? WHERE id = ?",
-#                     (user.email, user.otp, user.otp_expiry, user.storage_used, user.id)
-#                 )
-#             else:
-#                 cursor.execute(
-#                     "INSERT INTO users (email, otp, otp_expiry, storage_used) VALUES (?, ?, ?, ?)",
-#                     (user.email, user.otp, user.otp_expiry, user.storage_used)
-#                 )
-#                 user.id = cursor.lastrowid
-#             conn.commit()
-#             conn.close()
-#             return True
-#         except Exception as e:
-#             logger.error(f"Error saving user: {e}")
-#             return False
-
-# class User(UserMixin):
-#     def __init__(self, email, otp=None, otp_expiry=None, storage_used=0.0, id=None):
-#         self.id = id
-#         self.email = email
-#         self.otp = otp
-#         self.otp_expiry = otp_expiry
-#         self.storage_used = storage_used  # In MB
-
-#     def get_id(self):
-#         return str(self.email)
-
-#     def generate_otp(self):
-#         from auth import AuthManager
-#         self.otp = AuthManager.generate_otp()
-#         self.otp_expiry = datetime.now() + timedelta(minutes=10)
-#         return self.otp
-
-#     def verify_otp(self, otp):
-#         if not self.otp or not self.otp_expiry:
-#             return False
-#         expiry = datetime.strptime(self.otp_expiry, '%Y-%m-%d %H:%M:%S.%f') if self.otp_expiry else None
-#         return self.otp == otp and datetime.now() < expiry
-
-#     def clear_otp(self):
-#         self.otp = None
-#         self.otp_expiry = None
-
-#     def update_storage_used(self, size_mb):
-#         self.storage_used += size_mb
-
-#     def save(self):
-#         return UserRepository.save_user(self)
-
-#     @staticmethod
-#     def get_user(email):
-#         return UserRepository.get_user(email)
-
-# class FileRepository:
-#     @staticmethod
-#     def get_db_connection():
-#         # Use /tmp/ for deployment (e.g., Render), temp dir for local testing
-#         db_path = '/tmp/megacloud.db' if os.getenv('RENDER') else os.path.join(tempfile.gettempdir(), 'megacloud.db')
-#         conn = sqlite3.connect(db_path, timeout=10)
-#         conn.row_factory = sqlite3.Row
-#         return conn
-
-#     @staticmethod
-#     def save_file(file):
-#         try:
-#             conn = FileRepository.get_db_connection()
-#             cursor = conn.cursor()
-#             chunk_data = json.dumps(file.chunk_ids)
-#             cursor.execute(
-#                 """INSERT INTO files 
-#                 (filename, chunk_ids, user_email, size_mb, category) 
-#                 VALUES (?, ?, ?, ?, ?)""",
-#                 (file.filename, chunk_data, file.user_email, file.size_mb, file.category)
-#             )
-#             conn.commit()
-#             conn.close()
-#             return True
-#         except Exception as e:
-#             logger.error(f"Error saving file: {e}")
-#             return False
-
-#     @staticmethod
-#     def get_files(user_email):
-#         try:
-#             conn = FileRepository.get_db_connection()
-#             cursor = conn.cursor()
-#             cursor.execute("SELECT * FROM files WHERE user_email = ?", (user_email,))
-#             files = cursor.fetchall()
-#             conn.close()
-#             processed_files = []
-#             for f in files:
-#                 try:
-#                     chunk_ids = json.loads(f['chunk_ids']) if isinstance(f['chunk_ids'], str) else f['chunk_ids']
-#                     if chunk_ids and isinstance(chunk_ids[0], str):
-#                         chunk_ids = [
-#                             {
-#                                 "provider_id": (i % 5) + 1,
-#                                 "chunk_number": i,
-#                                 "chunk_path": chunk_id,
-#                                 "chunk_hash": "placeholder"
-#                             }
-#                             for i, chunk_id in enumerate(chunk_ids)
-#                         ]
-#                     processed_files.append({
-#                         "id": f['id'],
-#                         "filename": f['filename'],
-#                         "chunk_ids": chunk_ids,
-#                         "size_mb": f['size_mb'],
-#                         "category": f['category']
-#                     })
-#                 except Exception as e:
-#                     logger.error(f"Error processing file {f['id']}: {e}")
-#                     continue
-#             return processed_files
-#         except Exception as e:
-#             logger.error(f"Error getting files: {e}")
-#             return []
-
-#     @staticmethod
-#     def get_file_by_name(filename, user_email):
-#         try:
-#             conn = FileRepository.get_db_connection()
-#             cursor = conn.cursor()
-#             cursor.execute("SELECT * FROM files WHERE filename = ? AND user_email = ?", (filename, user_email))
-#             file = cursor.fetchone()
-#             conn.close()
-#             if file:
-#                 try:
-#                     chunk_ids = json.loads(file['chunk_ids']) if isinstance(file['chunk_ids'], str) else file['chunk_ids']
-#                     if chunk_ids and isinstance(chunk_ids[0], str):
-#                         chunk_ids = [
-#                             {
-#                                 "provider_id": (i % 5) + 1,
-#                                 "chunk_number": i,
-#                                 "chunk_path": chunk_id,
-#                                 "chunk_hash": "placeholder"
-#                             }
-#                             for i, chunk_id in enumerate(chunk_ids)
-#                         ]
-#                     return {
-#                         "id": file['id'],
-#                         "filename": file['filename'],
-#                         "chunk_ids": chunk_ids,
-#                         "size_mb": file['size_mb'],
-#                         "category": file['category'],
-#                         "user_email": file['user_email']
-#                     }
-#                 except Exception as e:
-#                     logger.error(f"Error processing chunk IDs for file {file['id']}: {e}")
-#                     return None
-#             return None
-#         except Exception as e:
-#             logger.error(f"Error getting file: {e}")
-#             return None
-
-#     @staticmethod
-#     def delete_file(file_id):
-#         try:
-#             conn = FileRepository.get_db_connection()
-#             cursor = conn.cursor()
-#             cursor.execute("DELETE FROM files WHERE id = ?", (file_id,))
-#             conn.commit()
-#             conn.close()
-#             return True
-#         except Exception as e:
-#             logger.error(f"Error deleting file: {e}")
-#             return False
-
-# class File:
-#     def __init__(self, filename, user_email, chunk_ids=None, chunks=None, size_mb=0.0, file_size=None, category=None):
-#         self.filename = filename
-#         self.user_email = user_email
-#         self.size_mb = size_mb or (file_size / (1024 * 1024) if file_size else 0.0)
-#         self.category = category or self._categorize()
-#         if chunks:
-#             self.chunk_ids = chunks
-#         elif isinstance(chunk_ids, list):
-#             if all(isinstance(x, dict) for x in chunk_ids):
-#                 self.chunk_ids = chunk_ids
-#             else:
-#                 self.chunk_ids = [
-#                     {
-#                         "provider_id": (i % 5) + 1,
-#                         "chunk_number": i,
-#                         "chunk_path": chunk_id,
-#                         "chunk_hash": "placeholder"
-#                     }
-#                     for i, chunk_id in enumerate(chunk_ids)
-#                 ]
-#         else:
-#             self.chunk_ids = []
-
-#     def _categorize(self):
-#         ext = self.filename.lower().split('.')[-1]
-#         if ext in ['png', 'jpg', 'jpeg', 'gif']:
-#             return "Images"
-#         elif ext in ['pdf', 'doc', 'docx', 'txt']:
-#             return "Documents"
-#         return "Other"
-
-#     def save(self):
-#         return FileRepository.save_file(self)
-
-#     @staticmethod
-#     def get_files(user_email):
-#         return FileRepository.get_files(user_email)
-
-#     @staticmethod
-#     def get_file_by_name(filename, user_email):
-#         return FileRepository.get_file_by_name(filename, user_email)
-
-#     @staticmethod
-#     def delete_file(file_id):
-#         return FileRepository.delete_file(file_id)
-
-# UserRepository.init_db()
-
-
-
-
-
-
 import os
 import json
 import logging
-import tempfile
+import time
 from flask_login import UserMixin
 from datetime import datetime, timedelta
-import psycopg2
-from psycopg2 import pool
+import firebase_admin
+from firebase_admin import credentials, firestore
 from dotenv import load_dotenv
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, filename='app.log', filemode='a',
-                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('app.log', mode='a'),
+        logging.StreamHandler()
+    ]
+)
 logger = logging.getLogger(__name__)
 
-# Load environment variables for Supabase
 load_dotenv()
 
-# Global variable for the connection pool, initialized lazily
-db_pool = None
-
-def initialize_db_pool():
-    global db_pool
-    if db_pool is None:
-        try:
-            db_pool = pool.SimpleConnectionPool(
-                1, 20,  # Min 1, max 20 connections
-                host=os.getenv('PGHOST'),
-                port=os.getenv('PGPORT'),
-                user=os.getenv('PGUSER'),
-                password=os.getenv('PGPASSWORD'),
-                database=os.getenv('PGDATABASE')
-            )
-            logger.info("Database pool initialized successfully")
-        except Exception as e:
-            logger.error(f"Failed to initialize database pool: {e}")
-            raise
+try:
+    firebase_creds = os.getenv('FIREBASE_CREDENTIALS')
+    if not firebase_creds:
+        raise ValueError("FIREBASE_CREDENTIALS environment variable is not set")
+    cred = credentials.Certificate(json.loads(firebase_creds))
+    firebase_admin.initialize_app(cred)
+    db = firestore.client()
+    logger.info("Firebase Firestore initialized successfully with JSON string from env")
+except ValueError as ve:
+    logger.error(f"Firebase initialization failed: {ve}")
+    raise
+except Exception as e:
+    logger.error(f"Failed to initialize Firebase: {e}")
+    raise
 
 class UserRepository:
     @staticmethod
-    def get_db_connection():
-        initialize_db_pool()  # Ensure pool is ready
-        conn = db_pool.getconn()
-        return conn
-
-    @staticmethod
-    def release_db_connection(conn):
-        db_pool.putconn(conn)
-
-    @staticmethod
     def init_db():
-        conn = UserRepository.get_db_connection()
-        try:
-            with conn.cursor() as cur:
-                cur.execute('''
-                    CREATE TABLE IF NOT EXISTS users (
-                        id SERIAL PRIMARY KEY,
-                        email TEXT UNIQUE NOT NULL,
-                        otp TEXT,
-                        otp_expiry TEXT,
-                        storage_used REAL DEFAULT 0.0
-                    )
-                ''')
-                cur.execute('''
-                    CREATE TABLE IF NOT EXISTS files (
-                        id SERIAL PRIMARY KEY,
-                        filename TEXT NOT NULL,
-                        chunk_ids JSONB NOT NULL,
-                        user_email TEXT NOT NULL,
-                        size_mb REAL NOT NULL,
-                        category TEXT,
-                        CONSTRAINT fk_user
-                            FOREIGN KEY (user_email)
-                            REFERENCES users(email)
-                            ON DELETE CASCADE
-                    )
-                ''')
-                conn.commit()
-                logger.info("Database tables initialized")
-        except Exception as e:
-            logger.error(f"Error initializing database: {e}")
-        finally:
-            UserRepository.release_db_connection(conn)
+        logger.info("Firestore initialized (no schema creation required)")
 
     @staticmethod
     def get_user(email: str):
         try:
-            conn = UserRepository.get_db_connection()
-            with conn.cursor() as cur:
-                cur.execute("SELECT * FROM users WHERE email = %s", (email,))
-                user_data = cur.fetchone()
-                if user_data:
-                    return User(
-                        id=user_data[0],
-                        email=user_data[1],
-                        otp=user_data[2],
-                        otp_expiry=user_data[3],
-                        storage_used=user_data[4]
-                    )
+            doc_ref = db.collection('users').document(email)
+            doc = doc_ref.get()
+            if doc.exists:
+                data = doc.to_dict()
+                return User(
+                    id=doc.id,
+                    email=data['email'],
+                    otp=data.get('otp'),
+                    otp_expiry=data.get('otp_expiry'),
+                    storage_used=data.get('storage_used', 0.0)
+                )
             return None
         except Exception as e:
-            logger.error(f"Error getting user: {e}")
+            logger.error(f"Error getting user {email}: {e}")
             return None
-        finally:
-            UserRepository.release_db_connection(conn)
 
     @staticmethod
     def save_user(user):
         try:
-            conn = UserRepository.get_db_connection()
-            with conn.cursor() as cur:
-                if user.id:
-                    cur.execute(
-                        "UPDATE users SET email = %s, otp = %s, otp_expiry = %s, storage_used = %s WHERE id = %s",
-                        (user.email, user.otp, user.otp_expiry, user.storage_used, user.id)
-                    )
-                else:
-                    cur.execute(
-                        "INSERT INTO users (email, otp, otp_expiry, storage_used) VALUES (%s, %s, %s, %s) RETURNING id",
-                        (user.email, user.otp, user.otp_expiry, user.storage_used)
-                    )
-                    user.id = cur.fetchone()[0]
-                conn.commit()
+            doc_ref = db.collection('users').document(user.email)
+            doc_ref.set({
+                'email': user.email,
+                'otp': user.otp,
+                'otp_expiry': user.otp_expiry.isoformat() if user.otp_expiry else None,
+                'storage_used': user.storage_used
+            }, merge=True)
+            logger.info(f"Saved user {user.email} to Firestore")
             return True
         except Exception as e:
-            logger.error(f"Error saving user: {e}")
+            logger.error(f"Error saving user {user.email}: {e}")
             return False
-        finally:
-            UserRepository.release_db_connection(conn)
 
 class User(UserMixin):
     def __init__(self, email, otp=None, otp_expiry=None, storage_used=0.0, id=None):
-        self.id = id
+        self.id = id or email
         self.email = email
         self.otp = otp
-        self.otp_expiry = otp_expiry
-        self.storage_used = storage_used  # In MB
+        self.otp_expiry = datetime.strptime(otp_expiry, '%Y-%m-%dT%H:%M:%S.%f') if otp_expiry else None
+        self.storage_used = storage_used
 
     def get_id(self):
-        return str(self.email)
+        return self.email
 
     def generate_otp(self):
         from auth import AuthManager
@@ -447,8 +95,7 @@ class User(UserMixin):
     def verify_otp(self, otp):
         if not self.otp or not self.otp_expiry:
             return False
-        expiry = datetime.strptime(self.otp_expiry, '%Y-%m-%d %H:%M:%S.%f') if self.otp_expiry else None
-        return self.otp == otp and datetime.now() < expiry
+        return self.otp == otp and datetime.now() < self.otp_expiry
 
     def clear_otp(self):
         self.otp = None
@@ -466,124 +113,107 @@ class User(UserMixin):
 
 class FileRepository:
     @staticmethod
-    def get_db_connection():
-        initialize_db_pool()  # Ensure pool is ready
-        conn = db_pool.getconn()
-        return conn
-
-    @staticmethod
-    def release_db_connection(conn):
-        db_pool.putconn(conn)
-
-    @staticmethod
     def save_file(file):
         try:
-            conn = FileRepository.get_db_connection()
-            with conn.cursor() as cur:
-                chunk_data = json.dumps(file.chunk_ids)
-                cur.execute(
-                    """INSERT INTO files 
-                    (filename, chunk_ids, user_email, size_mb, category) 
-                    VALUES (%s, %s, %s, %s, %s)""",
-                    (file.filename, chunk_data, file.user_email, file.size_mb, file.category)
-                )
-                conn.commit()
+            # Check if file already exists for this user
+            existing_file = FileRepository.get_file_by_name(file.filename, file.user_email)
+            if existing_file:
+                logger.warning(f"File {file.filename} already exists for {file.user_email}, skipping save")
+                return False  # Indicate that save was skipped due to duplicate
+            
+            doc_ref = db.collection('files').document()
+            doc_ref.set({
+                'filename': file.filename,
+                'chunk_ids': json.dumps(file.chunk_ids),
+                'user_email': file.user_email,
+                'size_mb': file.size_mb,
+                'category': file.category,
+                'created_at': firestore.SERVER_TIMESTAMP
+            })
+            logger.info(f"Saved file {file.filename} for {file.user_email}")
             return True
         except Exception as e:
-            logger.error(f"Error saving file: {e}")
+            logger.error(f"Error saving file {file.filename}: {e}")
             return False
-        finally:
-            FileRepository.release_db_connection(conn)
 
     @staticmethod
     def get_files(user_email):
         try:
-            conn = FileRepository.get_db_connection()
-            with conn.cursor() as cur:
-                cur.execute("SELECT * FROM files WHERE user_email = %s", (user_email,))
-                files = cur.fetchall()
-                processed_files = []
-                for f in files:
-                    try:
-                        chunk_ids = json.loads(f[2]) if isinstance(f[2], str) else f[2]
-                        if chunk_ids and isinstance(chunk_ids[0], str):
-                            chunk_ids = [
-                                {
-                                    "provider_id": (i % 5) + 1,
-                                    "chunk_number": i,
-                                    "chunk_path": chunk_id,
-                                    "chunk_hash": "placeholder"
-                                }
-                                for i, chunk_id in enumerate(chunk_ids)
-                            ]
-                        processed_files.append({
-                            "id": f[0],
-                            "filename": f[1],
-                            "chunk_ids": chunk_ids,
-                            "size_mb": f[4],
-                            "category": f[5]
-                        })
-                    except Exception as e:
-                        logger.error(f"Error processing file {f[0]}: {e}")
-                        continue
+            query = db.collection('files').where('user_email', '==', user_email).stream()
+            processed_files = []
+            for doc in query:
+                data = doc.to_dict()
+                chunk_ids = json.loads(data['chunk_ids']) if data['chunk_ids'] else []
+                if chunk_ids and isinstance(chunk_ids[0], str):
+                    chunk_ids = [
+                        {
+                            "provider_id": (i % 5) + 1,
+                            "chunk_number": i,
+                            "chunk_path": chunk_id,
+                            "chunk_hash": "placeholder"
+                        }
+                        for i, chunk_id in enumerate(chunk_ids)
+                    ]
+                processed_files.append({
+                    "id": doc.id,
+                    "filename": data['filename'],
+                    "chunk_ids": chunk_ids,
+                    "size_mb": data['size_mb'],
+                    "category": data['category']
+                })
             return processed_files
         except Exception as e:
-            logger.error(f"Error getting files: {e}")
+            logger.error(f"Error getting files for {user_email}: {e}")
             return []
-        finally:
-            FileRepository.release_db_connection(conn)
 
     @staticmethod
     def get_file_by_name(filename, user_email):
-        try:
-            conn = FileRepository.get_db_connection()
-            with conn.cursor() as cur:
-                cur.execute("SELECT * FROM files WHERE filename = %s AND user_email = %s", (filename, user_email))
-                file = cur.fetchone()
-                if file:
-                    try:
-                        chunk_ids = json.loads(file[2]) if isinstance(file[2], str) else file[2]
-                        if chunk_ids and isinstance(chunk_ids[0], str):
-                            chunk_ids = [
-                                {
-                                    "provider_id": (i % 5) + 1,
-                                    "chunk_number": i,
-                                    "chunk_path": chunk_id,
-                                    "chunk_hash": "placeholder"
-                                }
-                                for i, chunk_id in enumerate(chunk_ids)
-                            ]
-                        return {
-                            "id": file[0],
-                            "filename": file[1],
-                            "chunk_ids": chunk_ids,
-                            "size_mb": file[4],
-                            "category": file[5],
-                            "user_email": file[3]
-                        }
-                    except Exception as e:
-                        logger.error(f"Error processing chunk IDs for file {file[0]}: {e}")
-                        return None
-            return None
-        except Exception as e:
-            logger.error(f"Error getting file: {e}")
-            return None
-        finally:
-            FileRepository.release_db_connection(conn)
+        max_retries = 3
+        retry_delay = 0.5  # seconds
+        
+        for attempt in range(max_retries):
+            try:
+                query = db.collection('files').where('filename', '==', filename).where('user_email', '==', user_email).stream()
+                for doc in query:
+                    data = doc.to_dict()
+                    chunk_ids = json.loads(data['chunk_ids']) if data['chunk_ids'] else []
+                    if chunk_ids and isinstance(chunk_ids[0], str):
+                        chunk_ids = [
+                            {
+                                "provider_id": (i % 5) + 1,
+                                "chunk_number": i,
+                                "chunk_path": chunk_id,
+                                "chunk_hash": "placeholder"
+                            }
+                            for i, chunk_id in enumerate(chunk_ids)
+                        ]
+                    logger.info(f"Found file {filename} for {user_email} on attempt {attempt + 1}")
+                    return {
+                        "id": doc.id,
+                        "filename": data['filename'],
+                        "chunk_ids": chunk_ids,
+                        "size_mb": data['size_mb'],
+                        "category": data['category'],
+                        "user_email": data['user_email']
+                    }
+                logger.info(f"No file {filename} found for {user_email} on attempt {attempt + 1}")
+                if attempt < max_retries - 1:
+                    time.sleep(retry_delay)
+                else:
+                    return None
+            except Exception as e:
+                logger.error(f"Error getting file {filename} for {user_email}: {str(e)}")
+                return None
 
     @staticmethod
     def delete_file(file_id):
         try:
-            conn = FileRepository.get_db_connection()
-            with conn.cursor() as cur:
-                cur.execute("DELETE FROM files WHERE id = %s", (file_id,))
-                conn.commit()
+            db.collection('files').document(file_id).delete()
+            logger.info(f"Deleted file with ID {file_id}")
             return True
         except Exception as e:
-            logger.error(f"Error deleting file: {e}")
+            logger.error(f"Error deleting file {file_id}: {e}")
             return False
-        finally:
-            FileRepository.release_db_connection(conn)
 
 class File:
     def __init__(self, filename, user_email, chunk_ids=None, chunks=None, size_mb=0.0, file_size=None, category=None):
@@ -615,6 +245,8 @@ class File:
             return "Images"
         elif ext in ['pdf', 'doc', 'docx', 'txt']:
             return "Documents"
+        elif ext in ['mp4', 'webm', 'ogg', 'mov', 'avi']:
+            return "Videos"
         return "Other"
 
     def save(self):
@@ -631,6 +263,3 @@ class File:
     @staticmethod
     def delete_file(file_id):
         return FileRepository.delete_file(file_id)
-
-# Initialize the database only when needed (e.g., first DB call), not at import
-# UserRepository.init_db()  # Uncomment if you want to force init on startup

@@ -222,19 +222,19 @@ async function listFiles(category = 'All') {
         
         fileList.innerHTML = files.map(file => `
             <div class="file-item">
-                <i class="${getFileIcon(file.filename)} file-icon"></i>
+                <i class="${getFileIcon(file.display_filename)} file-icon"></i>
                 <div class="flex-grow-1">
-                    <span>${file.filename}</span>
+                    <span>${file.display_filename}</span>
                     <small class="d-block text-muted">${file.size_mb.toFixed(2)} MB</small>
                 </div>
                 <div>
-                    <button class="btn btn-sm btn-primary mx-1" onclick="previewFile('${file.filename}')">
+                    <button class="btn btn-sm btn-primary mx-1" onclick="previewFile('${file.file_id}')">
                         <i class="fas fa-eye"></i>
                     </button>
-                    <button class="btn btn-sm btn-primary mx-1" onclick="downloadFile('${file.filename}')">
+                    <button class="btn btn-sm btn-primary mx-1" onclick="downloadFile('${file.file_id}')">
                         <i class="fas fa-download"></i>
                     </button>
-                    <button class="btn btn-sm btn-danger mx-1" onclick="deleteFile('${file.filename}')">
+                    <button class="btn btn-sm btn-danger mx-1" onclick="deleteFile('${file.file_id}', '${file.display_filename}')">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -264,19 +264,19 @@ async function searchFiles() {
         const fileList = document.getElementById('file-list');
         fileList.innerHTML = result.files.map(file => `
             <div class="file-item">
-                <i class="${getFileIcon(file.filename)} file-icon"></i>
+                <i class="${getFileIcon(file.display_filename)} file-icon"></i>
                 <div class="flex-grow-1">
-                    <span>${file.filename}</span>
+                    <span>${file.display_filename}</span>
                     <small class="d-block text-muted">${file.size_mb.toFixed(2)} MB</small>
                 </div>
                 <div>
-                    <button class="btn btn-sm btn-primary mx-1" onclick="previewFile('${file.filename}')">
+                    <button class="btn btn-sm btn-primary mx-1" onclick="previewFile('${file.file_id}')">
                         <i class="fas fa-eye"></i>
                     </button>
-                    <button class="btn btn-sm btn-primary mx-1" onclick="downloadFile('${file.filename}')">
+                    <button class="btn btn-sm btn-primary mx-1" onclick="downloadFile('${file.file_id}')">
                         <i class="fas fa-download"></i>
                     </button>
-                    <button class="btn btn-sm btn-danger mx-1" onclick="deleteFile('${file.filename}')">
+                    <button class="btn btn-sm btn-danger mx-1" onclick="deleteFile('${file.file_id}', '${file.display_filename}')">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -322,28 +322,37 @@ async function updateStats() {
     }
 }
 
-async function previewFile(filename) {
+async function previewFile(fileId) {
     showSpinner();
     document.getElementById('preview-overlay').style.display = 'flex';
-    document.getElementById('preview-title').textContent = filename;
     const previewContent = document.getElementById('preview-content');
     const downloadBtn = document.getElementById('download-preview-btn');
     
     try {
-        const response = await fetch(`/preview/${encodeURIComponent(filename)}`, { credentials: 'include' });
+        const response = await fetch(`/preview/${fileId}`, { credentials: 'include' });
         if (!response.ok) {
-            throw new Error('Preview failed');
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Preview failed');
         }
         
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
         const mimeType = response.headers.get('Content-Type') || 'application/octet-stream';
         
+        const fileListResponse = await fetch('/list_files');
+        const fileList = await fileListResponse.json();
+        const file = fileList.files.find(f => f.file_id === fileId);
+        const displayFilename = file ? file.display_filename : 'Unknown File';
+        
+        document.getElementById('preview-title').textContent = displayFilename;
+        
         previewContent.innerHTML = '';
-        downloadBtn.style.display = 'none'; // Hide by default, show only if preview not supported
+        downloadBtn.style.display = 'none';
+        
+        console.log(`Preview MIME type: ${mimeType}`); // Debug log
         
         if (mimeType.startsWith('image/')) {
-            previewContent.innerHTML = `<img src="${url}" class="img-fluid" alt="${filename}">`;
+            previewContent.innerHTML = `<img src="${url}" class="img-fluid" alt="${displayFilename}">`;
         } else if (mimeType === 'application/pdf') {
             previewContent.innerHTML = `<embed src="${url}" type="application/pdf" width="100%" height="600px">`;
         } else if (mimeType.startsWith('video/')) {
@@ -364,11 +373,12 @@ async function previewFile(filename) {
         } else {
             previewContent.innerHTML = '<p>Preview not available for this file type.</p>';
             downloadBtn.style.display = 'inline-block';
-            downloadBtn.onclick = () => downloadFile(filename);
+            downloadBtn.onclick = () => downloadFile(fileId);
         }
         
         previewContent.style.display = 'block';
         previewContent.dataset.previewUrl = url;
+        currentPreviewFile = displayFilename;
     } catch (error) {
         showMessage('Failed to load preview: ' + error.message, 'error');
         closePreview();
@@ -386,19 +396,21 @@ function closePreview() {
         delete previewContent.dataset.previewUrl;
     }
     
-    const filename = document.getElementById('preview-title').textContent;
-    fetch(`/cleanup_preview/${encodeURIComponent(filename)}`, {
-        method: 'POST',
-        credentials: 'include'
-    }).then(response => response.json())
-      .then(result => {
-          if (result.success) {
-              console.log('Preview file cleaned up');
-          } else {
-              console.error('Cleanup failed:', result.error);
-          }
-      })
-      .catch(error => console.error('Error during cleanup:', error));
+    if (currentPreviewFile) {
+        fetch(`/cleanup_preview/${encodeURIComponent(currentPreviewFile)}`, {
+            method: 'POST',
+            credentials: 'include'
+        }).then(response => response.json())
+          .then(result => {
+              if (result.success) {
+                  console.log('Preview file cleaned up');
+              } else {
+                  console.error('Cleanup failed:', result.error);
+              }
+          })
+          .catch(error => console.error('Error during cleanup:', error));
+        currentPreviewFile = null;
+    }
     
     previewOverlay.style.display = 'none';
     previewContent.style.display = 'none';
@@ -406,18 +418,27 @@ function closePreview() {
     document.getElementById('download-preview-btn').style.display = 'none';
 }
 
-async function downloadFile(filename) {
+async function downloadFile(fileId) {
     showSpinner();
     try {
-        const response = await fetch(`/download/${filename}`);
-        if (!response.ok) throw new Error('Download failed');
+        const response = await fetch(`/download/${fileId}`, { credentials: 'include' });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Download failed');
+        }
         
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
         
+        // Fetch file list to get the display filename
+        const fileListResponse = await fetch('/list_files');
+        const fileList = await fileListResponse.json();
+        const file = fileList.files.find(f => f.file_id === fileId);
+        const displayFilename = file ? file.display_filename : 'downloaded_file';
+        
         const a = document.createElement('a');
         a.href = url;
-        a.download = filename;
+        a.download = displayFilename;
         document.body.appendChild(a);
         a.click();
         
@@ -426,7 +447,7 @@ async function downloadFile(filename) {
             URL.revokeObjectURL(url);
         }, 100);
         
-        showMessage(`"${filename}" downloaded successfully`, "success");
+        showMessage(`"${displayFilename}" downloaded successfully`, "success");
     } catch (error) {
         showMessage("Download failed: " + error.message, "error");
     } finally {
@@ -434,16 +455,16 @@ async function downloadFile(filename) {
     }
 }
 
-async function deleteFile(filename) {
-    if (!confirm(`Are you sure you want to delete "${filename}"?`)) return;
+async function deleteFile(fileId, displayFilename) {
+    if (!confirm(`Are you sure you want to delete "${displayFilename}"?`)) return;
     
     showSpinner();
     try {
-        const response = await fetch(`/delete/${filename}`, { method: 'DELETE' });
+        const response = await fetch(`/delete/${fileId}`, { method: 'DELETE', credentials: 'include' });
         const result = await response.json();
         
         if (response.ok) {
-            showMessage(`"${filename}" deleted successfully`, "success");
+            showMessage(`"${displayFilename}" deleted successfully`, "success");
             await listFiles();
             await updateStats();
         } else {

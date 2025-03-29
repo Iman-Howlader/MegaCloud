@@ -10,11 +10,18 @@ import os
 import json
 import mimetypes
 import logging
+import uuid
 from dotenv import load_dotenv
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, filename='app.log', filemode='a',
-                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# Configure logging to both file and stdout
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('app.log', mode='a'),
+        logging.StreamHandler()
+    ]
+)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
@@ -29,10 +36,8 @@ login_manager.login_view = 'index'
 def load_user(email):
     return User.get_user(email)
 
-# Function to create temporary JSON files from .env data
 def create_temp_json_file(data_str, prefix):
     if data_str:
-        # Remove unescaped control characters and collapse to single line
         data_str = data_str.replace('\r\n', '\\n').replace('\n', '\\n').replace('\r', '').strip()
     try:
         data_dict = json.loads(data_str)
@@ -44,7 +49,6 @@ def create_temp_json_file(data_str, prefix):
     temp_file.close()
     return temp_file.name
 
-# Rest of your code remains unchanged...
 storage_providers = []
 try:
     dropbox_tokens_json = {
@@ -59,12 +63,10 @@ try:
     if not isinstance(dropbox_tokens.get("dropbox_token_2"), dict):
         raise ValueError("DROPBOX_TOKEN_2 must be a dictionary with app_key, app_secret, and refresh_token")
 
-    # Create temp JSON files for Google Drive credentials from .env
     google_cred_user1_file = create_temp_json_file(os.getenv('GOOGLE_CRED_USER1'), 'google_user1')
     google_cred_user2_file = create_temp_json_file(os.getenv('GOOGLE_CRED_USER2'), 'google_user2')
     google_cred_user3_file = create_temp_json_file(os.getenv('GOOGLE_CRED_USER3'), 'google_user3')
 
-    # Initialize Google Drive providers with temp files
     google_providers = [
         GoogleDriveProvider(google_cred_user1_file, "1F2oxw2W4o1MAL0iQdVkzCc2Zjw4z5XoM"),
         GoogleDriveProvider(google_cred_user2_file, "1SQGF0uGOGHJTSJvdbCnRm8cQdftMZbUy"),
@@ -73,7 +75,6 @@ try:
     storage_providers.extend(google_providers)
     logger.info("Google Drive providers initialized successfully")
 
-    # Initialize Dropbox providers
     dropbox_providers = [
         DropboxProvider(dropbox_tokens["dropbox_token_1"], "/MegaCloud01"),
         DropboxProvider(dropbox_tokens["dropbox_token_2"], "/MegaCloud02")
@@ -93,12 +94,26 @@ except Exception as e:
 file_manager = FileManager(storage_providers)
 logger.info(f"FileManager initialized with {len(storage_providers)} providers")
 
-# Store temporary preview files
 preview_files = {}
+
+def get_file_by_id(file_id, email):
+    logger.info(f"Looking for file with ID: {file_id} for email: {email}")
+    files = File.get_files(email)
+    for file in files:
+        if str(file['id']) == str(file_id):
+            logger.info(f"Found file: {file}")
+            return file
+    logger.warning(f"No file found with ID: {file_id}")
+    return None
 
 @app.route('/')
 def index():
     return render_template('login.html')
+
+@app.route('/test_db')
+def test_db():
+    UserRepository.init_db()
+    return "DB OK", 200
 
 @app.route('/request_otp', methods=['POST'])
 def request_otp():
@@ -108,7 +123,7 @@ def request_otp():
         email = data.get('email') if data else None
         if not email:
             logger.error("No email provided in request_otp")
-            return "Email required", 400
+            return jsonify({"error": "Email required"}), 400
         user = User.get_user(email)
         if not user:
             user = User(email=email)
@@ -117,33 +132,23 @@ def request_otp():
         logger.info(f"Generated OTP for {email}: {otp}")
         if user.save():
             logger.info(f"Saved user {email} to database")
-            if AuthManager.send_otp(email, otp):
+            if AuthManager.send_otp_email(email, otp):
                 logger.info(f"Sent OTP to {email}")
-                return "OTP sent", 200
+                session['email'] = email
+                return jsonify({"message": "OTP sent"}), 200
             else:
                 logger.error("Failed to send OTP")
-                return "Failed to send OTP", 500
+                return jsonify({"error": "Failed to send OTP"}), 500
         else:
             logger.error("Failed to save user to database")
-            return "Failed to save user", 500
+            return jsonify({"error": "Failed to save user"}), 500
     except Exception as e:
-        logger.error(f"Error in request_otp: {str(e)}")
-        return f"Server error: {str(e)}", 500
-
-# Test route for DB connection
-@app.route('/test_db')
-def test_db():
-    try:
-        UserRepository.init_db()
-        logger.info("Database connection test successful")
-        return "DB OK", 200
-    except Exception as e:
-        logger.error(f"Database connection test failed: {e}")
-        return f"DB Error: {e}", 500
+        logger.error(f"Error in request_otp: {str(e)}", exc_info=True)
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route('/verify_otp', methods=['POST'])
 def verify_otp():
-    data = request.get_json() or request.form  # Support JSON or form data
+    data = request.get_json() or request.form
     email = session.get('email')
     otp = data.get('otp')
     if not email or not otp:
@@ -176,36 +181,64 @@ def dashboard():
 @login_required
 def upload():
     if 'file' not in request.files:
+        logger.error("No file selected in upload request")
         return jsonify({"error": "No file selected"}), 400
         
     file = request.files['file']
     if file.filename == '':
+        logger.error("Empty filename in upload request")
         return jsonify({"error": "No file selected"}), 400
 
+    temp_path = None
     try:
-        temp_path = os.path.join(tempfile.gettempdir(), file.filename)
+        base_filename = file.filename
+        # Append a unique suffix to the filename to avoid Firestore conflicts
+        unique_suffix = uuid.uuid4().hex[:8]
+        filename = f"{base_filename}_{unique_suffix}"
+        temp_path = os.path.join(tempfile.gettempdir(), filename)
         file.save(temp_path)
         
-        file_size = os.path.getsize(temp_path) / (1024 * 1024)
+        file_size = os.path.getsize(temp_path)
+        size_mb = file_size / (1024 * 1024)
         
-        result = file_manager.upload_file(temp_path, file.filename, current_user.email)
+        logger.info(f"Uploading file: {filename} ({size_mb:.2f} MB) for {current_user.email}")
+        chunk_ids = file_manager.upload_file(temp_path, filename, current_user.email)
+        if not chunk_ids:
+            raise Exception("File upload to storage provider failed")
+        
+        # Save file metadata with the unique filename
+        file_obj = File(filename=filename, user_email=current_user.email, chunk_ids=chunk_ids, size_mb=size_mb)
+        save_result = file_obj.save()
+        if not save_result:
+            logger.warning(f"File.save() returned False for {filename}, checking if it exists in Firestore")
+            # Verify if the file is already in Firestore
+            files = File.get_files(current_user.email)
+            if not any(f['filename'] == filename for f in files):
+                logger.error(f"Failed to save {filename} metadata to Firestore and it’s not present in the database")
+                raise Exception("Failed to save file metadata to Firestore due to a database error")
+            else:
+                logger.info(f"File {filename} already exists in Firestore, proceeding despite save() returning False")
         
         user = User.get_user(current_user.email)
-        user.update_storage_used(file_size)
-        user.save()
-        logger.info(f"Uploaded {file.filename}, Size: {file_size} MB, New Storage Used: {user.storage_used} MB")
+        if not user:
+            user = User(email=current_user.email)
+        user.update_storage_used(size_mb)
+        if not user.save():
+            raise Exception("Failed to update user storage in Firestore")
+        
+        logger.info(f"Uploaded {filename}, Size: {size_mb:.2f} MB, New Storage Used: {user.storage_used:.2f} MB")
         
         return jsonify({
             "message": "File uploaded successfully",
-            "filename": file.filename,
-            "size_mb": file_size
+            "filename": base_filename,  # Return original filename without suffix
+            "size_mb": size_mb
         })
         
     except Exception as e:
-        logger.error(f"Upload failed: {str(e)}")
+        logger.error(f"Upload failed: {str(e)}", exc_info=True)
         return jsonify({"error": str(e)}), 500
     finally:
-        if 'temp_path' in locals() and os.path.exists(temp_path):
+        if temp_path and os.path.exists(temp_path):
             os.remove(temp_path)
 
 @app.route("/list_files", methods=["GET"])
@@ -213,18 +246,24 @@ def upload():
 def list_files():
     try:
         files = File.get_files(current_user.email)
+        # Remove unique suffix for display and include file ID
+        for f in files:
+            f['display_filename'] = '_'.join(f['filename'].split('_')[:-1])
+            f['file_id'] = f['id']  # Include file ID for frontend actions
         categorized = {
             "Images": [f for f in files if f['category'] == "Images"],
             "Documents": [f for f in files if f['category'] == "Documents"],
+            "Videos": [f for f in files if f['category'] == "Videos"],
             "Other": [f for f in files if f['category'] == "Other"]
         }
+        logger.info(f"Listed files for {current_user.email}: {len(files)} files found")
         return jsonify({
             "success": True,
             "files": files,
             "categorized": categorized
         })
     except Exception as e:
-        logger.error(f"Error listing files: {str(e)}")
+        logger.error(f"Error listing files: {str(e)}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 @app.route("/search_files", methods=["GET"])
@@ -233,10 +272,15 @@ def search_files():
     query = request.args.get('query', '').lower()
     try:
         files = File.get_files(current_user.email)
-        filtered = [f for f in files if query in f['filename'].lower()]
+        # Remove unique suffix for search and include file ID
+        filtered = [f for f in files if query in '_'.join(f['filename'].split('_')[:-1]).lower()]
+        for f in filtered:
+            f['display_filename'] = '_'.join(f['filename'].split('_')[:-1])
+            f['file_id'] = f['id']  # Include file ID for frontend actions
+        logger.info(f"Searched files for {current_user.email} with query '{query}': {len(filtered)} results")
         return jsonify({"success": True, "files": filtered})
     except Exception as e:
-        logger.error(f"Search failed: {str(e)}")
+        logger.error(f"Search failed: {str(e)}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 @app.route("/stats", methods=["GET"])
@@ -253,6 +297,11 @@ def stats():
         if user is None:
             raise ValueError("User not found")
         
+        if abs(user.storage_used - total_size) > 0.01:
+            user.storage_used = total_size
+            user.save()
+            logger.warning(f"Corrected storage_used for {current_user.email} to match total_size: {total_size} MB")
+        
         logger.info(f"Stats for {current_user.email}: Files: {total_files}, Total Size: {total_size} MB, Storage Used: {user.storage_used} MB")
         return jsonify({
             "success": True,
@@ -261,19 +310,21 @@ def stats():
             "storage_used": round(user.storage_used, 2)
         })
     except Exception as e:
-        logger.error(f"Stats failed for {current_user.email}: {str(e)}")
+        logger.error(f"Stats failed for {current_user.email}: {str(e)}", exc_info=True)
         return jsonify({"error": f"Failed to fetch stats: {str(e)}"}), 500
 
-@app.route("/download/<filename>", methods=["GET"])
+
+@app.route("/download/<file_id>", methods=["GET"])
 @login_required
-def download(filename):
+def download(file_id):
     try:
-        file = File.get_file_by_name(filename, current_user.email)
+        file = get_file_by_id(file_id, current_user.email)
         if not file:
+            logger.error(f"File with ID {file_id} not found for {current_user.email}")
             return jsonify({"error": "File not found"}), 404
             
         temp_dir = tempfile.gettempdir()
-        output_path = os.path.join(temp_dir, filename)
+        output_path = os.path.join(temp_dir, file['filename'])
         
         chunks = file['chunk_ids']
         if not chunks or not isinstance(chunks, list):
@@ -284,38 +335,48 @@ def download(filename):
             if not all(field in chunk for field in required_fields):
                 raise ValueError("Chunk data missing required fields")
         
-        file_manager.download_file(filename, chunks, output_path)
+        file_manager.download_file(file['filename'], chunks, output_path)
         
         if not os.path.exists(output_path):
             raise FileNotFoundError("File reconstruction failed")
             
-        return send_file(
+        base_filename = '_'.join(file['filename'].split('_')[:-1])
+        mime_type = mimetypes.guess_type(base_filename)[0] or "application/octet-stream"
+        logger.info(f"Downloaded {file['filename']} for {current_user.email}")
+        response = send_file(
             output_path,
             as_attachment=True,
-            mimetype="application/octet-stream",
-            download_name=filename
+            mimetype=mime_type,
+            download_name=base_filename
         )
+        # Delay cleanup to avoid PermissionError
+        def cleanup():
+            try:
+                if os.path.exists(output_path):
+                    os.remove(output_path)
+                    logger.info(f"Cleaned up download file: {output_path}")
+            except Exception as e:
+                logger.error(f"Failed to clean up {output_path}: {str(e)}")
+        
+        from threading import Timer
+        Timer(5.0, cleanup).start()  # Cleanup after 5 seconds
+        return response
         
     except Exception as e:
-        logger.error(f"Download failed for {filename}: {str(e)}")
+        logger.error(f"Download failed for file ID {file_id}: {str(e)}", exc_info=True)
         return jsonify({"error": str(e)}), 500
-    finally:
-        try:
-            if 'output_path' in locals() and os.path.exists(output_path):
-                os.remove(output_path)
-        except Exception as e:
-            logger.error(f"Error cleaning up download file: {str(e)}")
 
-@app.route("/preview/<filename>", methods=["GET"])
+@app.route("/preview/<file_id>", methods=["GET"])
 @login_required
-def preview(filename):
+def preview(file_id):
     try:
-        file = File.get_file_by_name(filename, current_user.email)
+        file = get_file_by_id(file_id, current_user.email)
         if not file:
+            logger.error(f"File with ID {file_id} not found for {current_user.email}")
             return jsonify({"error": "File not found"}), 404
             
         os.makedirs("downloads", exist_ok=True)
-        output_path = os.path.join("downloads", filename)
+        output_path = os.path.join("downloads", file['filename'])
         
         chunks = file['chunk_ids']
         if not chunks or not isinstance(chunks, list):
@@ -326,27 +387,16 @@ def preview(filename):
             if not all(field in chunk for field in required_fields):
                 raise ValueError("Chunk data missing required fields")
         
-        file_manager.download_file(filename, chunks, output_path)
+        file_manager.download_file(file['filename'], chunks, output_path)
         
         if not os.path.exists(output_path):
             raise FileNotFoundError("File reconstruction failed")
             
-        mime_type, _ = mimetypes.guess_type(filename)
-        if not mime_type:
-            mime_type = "application/octet-stream"
-            
-        video_extensions = {
-            'mp4': 'video/mp4',
-            'webm': 'video/webm',
-            'ogg': 'video/ogg',
-            'mov': 'video/quicktime',
-            'avi': 'video/x-msvideo'
-        }
-        file_extension = filename.lower().split('.')[-1]
-        if file_extension in video_extensions:
-            mime_type = video_extensions[file_extension]
-            
-        preview_files[filename] = output_path
+        base_filename = '_'.join(file['filename'].split('_')[:-1])
+        mime_type = mimetypes.guess_type(base_filename)[0] or "application/octet-stream"
+        
+        preview_files[base_filename] = output_path
+        logger.info(f"Previewing {file['filename']} for {current_user.email} with MIME type {mime_type}")
         
         return send_file(
             output_path,
@@ -355,7 +405,7 @@ def preview(filename):
         )
         
     except Exception as e:
-        logger.error(f"Preview failed for {filename}: {str(e)}")
+        logger.error(f"Preview failed for file ID {file_id}: {str(e)}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 @app.route("/cleanup_preview/<filename>", methods=["POST"])
@@ -368,31 +418,33 @@ def cleanup_preview(filename):
                 os.remove(output_path)
                 logger.info(f"Cleaned up preview file: {output_path}")
             return jsonify({"success": True, "message": "Preview file cleaned up"}), 200
+        logger.warning(f"File {filename} not found in preview cache")
         return jsonify({"error": "File not found in preview cache"}), 404
     except Exception as e:
-        logger.error(f"Cleanup failed for {filename}: {str(e)}")
+        logger.error(f"Cleanup failed for {filename}: {str(e)}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
-@app.route("/delete/<filename>", methods=["DELETE"])
+@app.route("/delete/<file_id>", methods=["DELETE"])
 @login_required
-def delete(filename):
+def delete(file_id):
     try:
-        file = File.get_file_by_name(filename, current_user.email)
+        file = get_file_by_id(file_id, current_user.email)
         if not file:
+            logger.error(f"File with ID {file_id} not found for {current_user.email}")
             return jsonify({"error": "File not found"}), 404
             
-        file_manager.delete_file(filename, file['chunk_ids'], current_user.email)
+        file_manager.delete_file(file['filename'], file['chunk_ids'], current_user.email)
         
         user = User.get_user(current_user.email)
         user.update_storage_used(-file['size_mb'])
         user.save()
-        logger.info(f"Deleted {filename}, New Storage Used: {user.storage_used} MB")
+        logger.info(f"Deleted {file['filename']}, New Storage Used: {user.storage_used} MB")
         
         File.delete_file(file['id'])
         
         return jsonify({"success": True, "message": "File deleted successfully"})
     except Exception as e:
-        logger.error(f"Delete failed for {filename}: {str(e)}")
+        logger.error(f"Delete failed for file ID {file_id}: {str(e)}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
