@@ -1,10 +1,11 @@
-from flask import Flask, request, jsonify, render_template, session, send_file
+from flask import Flask, request, jsonify, render_template, session, send_file, redirect, url_for
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
+from flask_session import Session
+from flask_wtf.csrf import CSRFProtect
 from auth import AuthManager
 from models import User, File, UserRepository
 from file_manager import FileManager
-from storage_providers.google_drive import GoogleDriveProvider
-from storage_providers.dropbox import DropboxProvider
+from ai_agent import AIAgent
 import tempfile
 import os
 import json
@@ -12,8 +13,10 @@ import mimetypes
 import logging
 import uuid
 from dotenv import load_dotenv
+import requests
+from werkzeug.utils import secure_filename
+import time
 
-# Configure logging to both file and stdout
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -27,88 +30,87 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 load_dotenv()
 app.secret_key = os.getenv('FLASK_SECRET_KEY', os.urandom(24))
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_USE_SIGNER'] = True
+Session(app)
+csrf = CSRFProtect(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'index'
 
+preview_files = {}
+download_files = {}
+
+# OAuth configuration
+GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
+GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET')
+GOOGLE_REDIRECT_URI = os.getenv('GOOGLE_REDIRECT_URI', 'http://localhost:5000/oauth/google/callback')
+DROPBOX_CLIENT_ID = os.getenv('DROPBOX_APP_KEY')
+DROPBOX_CLIENT_SECRET = os.getenv('DROPBOX_APP_SECRET')
+DROPBOX_REDIRECT_URI = os.getenv('DROPBOX_REDIRECT_URI', 'http://localhost:5000/oauth/dropbox/callback')
+
+# Initialize AI Agent
+ai_agent = AIAgent()
+
 @login_manager.user_loader
 def load_user(email):
-    return User.get_user(email)
-
-def create_temp_json_file(data_str, prefix):
-    if data_str:
-        data_str = data_str.replace('\r\n', '\\n').replace('\n', '\\n').replace('\r', '').strip()
-    try:
-        data_dict = json.loads(data_str)
-    except json.JSONDecodeError as e:
-        logger.error(f"Failed to parse JSON: {data_str[:200]}... - Error: {e}")
-        raise
-    temp_file = tempfile.NamedTemporaryFile(mode='w', prefix=prefix, suffix='.json', delete=False)
-    json.dump(data_dict, temp_file)
-    temp_file.close()
-    return temp_file.name
-
-storage_providers = []
-try:
-    dropbox_tokens_json = {
-        "dropbox_token_1": json.loads(os.getenv('DROPBOX_TOKEN_1')),
-        "dropbox_token_2": json.loads(os.getenv('DROPBOX_TOKEN_2'))
-    }
-    dropbox_tokens_file = create_temp_json_file(json.dumps(dropbox_tokens_json), 'dropbox_tokens')
-    with open(dropbox_tokens_file) as f:
-        dropbox_tokens = json.load(f)
-    if not isinstance(dropbox_tokens.get("dropbox_token_1"), dict):
-        raise ValueError("DROPBOX_TOKEN_1 must be a dictionary with app_key, app_secret, and refresh_token")
-    if not isinstance(dropbox_tokens.get("dropbox_token_2"), dict):
-        raise ValueError("DROPBOX_TOKEN_2 must be a dictionary with app_key, app_secret, and refresh_token")
-
-    google_cred_user1_file = create_temp_json_file(os.getenv('GOOGLE_CRED_USER1'), 'google_user1')
-    google_cred_user2_file = create_temp_json_file(os.getenv('GOOGLE_CRED_USER2'), 'google_user2')
-    google_cred_user3_file = create_temp_json_file(os.getenv('GOOGLE_CRED_USER3'), 'google_user3')
-
-    google_providers = [
-        GoogleDriveProvider(google_cred_user1_file, "1F2oxw2W4o1MAL0iQdVkzCc2Zjw4z5XoM"),
-        GoogleDriveProvider(google_cred_user2_file, "1SQGF0uGOGHJTSJvdbCnRm8cQdftMZbUy"),
-        GoogleDriveProvider(google_cred_user3_file, "1ZyNqPeaOkZC2uVWDnlLKg6QuEF5JOMUA")
-    ]
-    storage_providers.extend(google_providers)
-    logger.info("Google Drive providers initialized successfully")
-
-    dropbox_providers = [
-        DropboxProvider(dropbox_tokens["dropbox_token_1"], "/MegaCloud01"),
-        DropboxProvider(dropbox_tokens["dropbox_token_2"], "/MegaCloud02")
-    ]
-    storage_providers.extend(dropbox_providers)
-    logger.info("Dropbox providers initialized successfully")
-
-except FileNotFoundError as e:
-    logger.error(f"Config file missing: {str(e)}")
-    raise
-except ValueError as e:
-    logger.error(f"Configuration error: {str(e)}")
-    raise
-except Exception as e:
-    logger.error(f"Failed to initialize some storage providers: {str(e)}. Proceeding with available providers.")
-
-file_manager = FileManager(storage_providers)
-logger.info(f"FileManager initialized with {len(storage_providers)} providers")
-
-preview_files = {}
-
-def get_file_by_id(file_id, email):
-    logger.info(f"Looking for file with ID: {file_id} for email: {email}")
-    files = File.get_files(email)
-    for file in files:
-        if str(file['id']) == str(file_id):
-            logger.info(f"Found file: {file}")
-            return file
-    logger.warning(f"No file found with ID: {file_id}")
-    return None
+    return User.get_user_by_email(email)  
 
 @app.route('/')
 def index():
     return render_template('login.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'GET':
+        return render_template('register.html')
+    try:
+        data = request.form or request.get_json()
+        first_name = data.get('first_name')
+        last_name = data.get('last_name')
+        email = data.get('email')
+        username = data.get('username')
+        
+        if not all([first_name, last_name, email, username]):
+            return jsonify({"error": "All fields are required"}), 400
+            
+        if User.get_user_by_email(email):  # Changed from get_user to get_user_by_email
+            return jsonify({"error": "Email already registered"}), 400
+            
+        if User.get_user_by_username(username):
+            return jsonify({"error": "Username already taken"}), 400
+            
+        user = User(email=email, first_name=first_name, last_name=last_name, username=username)
+        otp = user.generate_otp()
+        if user.save() and AuthManager.send_otp_email(email, otp):
+            session['email'] = email
+            return jsonify({"message": "OTP sent to email", "redirect": "/verify_register"}), 200
+        return jsonify({"error": "Failed to register"}), 500
+    except Exception as e:
+        logger.error(f"Registration error: {str(e)}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/verify_register', methods=['GET', 'POST'])
+def verify_register():
+    if request.method == 'GET':
+        return render_template('verify_register.html')
+    data = request.get_json() or request.form
+    email = session.get('email')
+    otp = data.get('otp')
+    
+    if not email or not otp:
+        return jsonify({"error": "Email or OTP missing"}), 400
+        
+    success, message = AuthManager.verify_otp(email, otp)
+    if success:
+        user = User.get_user_by_email(email)  # Changed from get_user to get_user_by_email
+        login_user(user)
+        logger.info(f"User {email} registered and logged in")
+        return jsonify({"message": message, "redirect": "/dashboard"}), 200
+    logger.error(f"OTP verification failed for {email}: {message}")
+    return jsonify({"error": message}), 400
 
 @app.route('/test_db')
 def test_db():
@@ -119,29 +121,17 @@ def test_db():
 def request_otp():
     try:
         data = request.form or request.get_json()
-        logger.info(f"Received request_otp data: {data}")
-        email = data.get('email') if data else None
-        if not email:
-            logger.error("No email provided in request_otp")
-            return jsonify({"error": "Email required"}), 400
-        user = User.get_user(email)
+        identifier = data.get('identifier')
+        if not identifier:
+            return jsonify({"error": "Username or email required"}), 400
+        user = User.get_user_by_email(identifier) or User.get_user_by_username(identifier)  # Changed from get_user to get_user_by_email
         if not user:
-            user = User(email=email)
-            logger.info(f"Created new user for {email}")
+            return jsonify({"error": "User not registered. Please register first"}), 400
         otp = user.generate_otp()
-        logger.info(f"Generated OTP for {email}: {otp}")
-        if user.save():
-            logger.info(f"Saved user {email} to database")
-            if AuthManager.send_otp_email(email, otp):
-                logger.info(f"Sent OTP to {email}")
-                session['email'] = email
-                return jsonify({"message": "OTP sent"}), 200
-            else:
-                logger.error("Failed to send OTP")
-                return jsonify({"error": "Failed to send OTP"}), 500
-        else:
-            logger.error("Failed to save user to database")
-            return jsonify({"error": "Failed to save user"}), 500
+        if user.save() and AuthManager.send_otp_email(user.email, otp):
+            session['email'] = user.email
+            return jsonify({"message": "OTP sent"}), 200
+        return jsonify({"error": "Failed to send OTP"}), 500
     except Exception as e:
         logger.error(f"Error in request_otp: {str(e)}", exc_info=True)
         return jsonify({"error": f"Server error: {str(e)}"}), 500
@@ -152,11 +142,10 @@ def verify_otp():
     email = session.get('email')
     otp = data.get('otp')
     if not email or not otp:
-        logger.warning("Email or OTP missing in /verify_otp")
         return jsonify({"error": "Email or OTP missing"}), 400
     success, message = AuthManager.verify_otp(email, otp)
     if success:
-        user = User.get_user(email)
+        user = User.get_user_by_email(email)  # Changed from get_user to get_user_by_email
         login_user(user)
         logger.info(f"User {email} verified and logged in")
         return jsonify({"message": message, "redirect": "/dashboard"}), 200
@@ -175,10 +164,11 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    return render_template('dashboard.html')
+    return render_template('dashboard.html', user=current_user)
 
 @app.route("/upload", methods=["POST"])
 @login_required
+@csrf.exempt
 def upload():
     if 'file' not in request.files:
         logger.error("No file selected in upload request")
@@ -188,49 +178,62 @@ def upload():
     if file.filename == '':
         logger.error("Empty filename in upload request")
         return jsonify({"error": "No file selected"}), 400
+    if file.content_length > 100 * 1024 * 1024:  # 100MB limit
+        logger.error(f"File too large: {file.filename}")
+        return jsonify({"error": "File too large (max 100MB)"}), 400
 
     temp_path = None
     try:
-        base_filename = file.filename
-        # Append a unique suffix to the filename to avoid Firestore conflicts
+        base_filename = secure_filename(file.filename)
         unique_suffix = uuid.uuid4().hex[:8]
-        filename = f"{base_filename}_{unique_suffix}"
-        temp_path = os.path.join(tempfile.gettempdir(), filename)
-        file.save(temp_path)
+        storage_filename = f"{base_filename}_{unique_suffix}"  # Filename for storage providers
+        temp_path = os.path.join(tempfile.gettempdir(), storage_filename)
+        
+        # Save file in chunks
+        chunk_size = 1024 * 1024  # 1MB chunks
+        with open(temp_path, 'wb') as f:
+            while True:
+                chunk = file.stream.read(chunk_size)
+                if not chunk:
+                    break
+                f.write(chunk)
         
         file_size = os.path.getsize(temp_path)
         size_mb = file_size / (1024 * 1024)
         
-        logger.info(f"Uploading file: {filename} ({size_mb:.2f} MB) for {current_user.email}")
-        chunk_ids = file_manager.upload_file(temp_path, filename, current_user.email)
+        # Extract and store file content using AIAgent
+        content = ai_agent.extract_text(temp_path)
+        if content:
+            temp_file_id = str(uuid.uuid4())
+            ai_agent.store_content(temp_file_id, base_filename, content)
+        
+        logger.info(f"Uploading file: {storage_filename} ({size_mb:.2f} MB) for {current_user.email}")
+        file_manager = FileManager(current_user)
+        chunk_ids = file_manager.upload_file(temp_path, storage_filename, current_user.email)
         if not chunk_ids:
             raise Exception("File upload to storage provider failed")
         
-        # Save file metadata with the unique filename
-        file_obj = File(filename=filename, user_email=current_user.email, chunk_ids=chunk_ids, size_mb=size_mb)
-        save_result = file_obj.save()
-        if not save_result:
-            logger.warning(f"File.save() returned False for {filename}, checking if it exists in Firestore")
-            # Verify if the file is already in Firestore
-            files = File.get_files(current_user.email)
-            if not any(f['filename'] == filename for f in files):
-                logger.error(f"Failed to save {filename} metadata to Firestore and it’s not present in the database")
-                raise Exception("Failed to save file metadata to Firestore due to a database error")
-            else:
-                logger.info(f"File {filename} already exists in Firestore, proceeding despite save() returning False")
+        # Use base_filename for File object to ensure correct categorization
+        file_obj = File(filename=base_filename, user_email=current_user.email, chunk_ids=chunk_ids, size_mb=size_mb)
+        if not file_obj.save():
+            logger.error(f"Failed to save {base_filename} metadata to Firestore")
+            ai_agent.delete_content(temp_file_id)
+            raise Exception("Failed to save file metadata to Firestore")
         
-        user = User.get_user(current_user.email)
-        if not user:
-            user = User(email=current_user.email)
+        # Update file_id in content storage
+        if content:
+            ai_agent.delete_content(temp_file_id)
+            ai_agent.store_content(file_obj.id, base_filename, content)
+        
+        user = User.get_user_by_email(current_user.email)
         user.update_storage_used(size_mb)
-        if not user.save():
-            raise Exception("Failed to update user storage in Firestore")
+        user.save()
         
-        logger.info(f"Uploaded {filename}, Size: {size_mb:.2f} MB, New Storage Used: {user.storage_used:.2f} MB")
+        logger.info(f"Uploaded {base_filename}, Size: {size_mb:.2f} MB, New Storage Used: {user.storage_used:.2f} MB")
         
         return jsonify({
             "message": "File uploaded successfully",
-            "filename": base_filename,  # Return original filename without suffix
+            "filename": base_filename,
             "size_mb": size_mb
         })
         
@@ -239,21 +242,27 @@ def upload():
         return jsonify({"error": str(e)}), 500
     finally:
         if temp_path and os.path.exists(temp_path):
-            os.remove(temp_path)
+            try:
+                os.remove(temp_path)
+            except Exception as cleanup_error:
+                logger.error(f"Cleanup failed for {temp_path}: {str(cleanup_error)}")
 
 @app.route("/list_files", methods=["GET"])
 @login_required
 def list_files():
     try:
         files = File.get_files(current_user.email)
-        # Remove unique suffix for display and include file ID
+        if files is None:
+            return jsonify({"error": "Failed to retrieve files"}), 500
+            
         for f in files:
             f['display_filename'] = '_'.join(f['filename'].split('_')[:-1])
-            f['file_id'] = f['id']  # Include file ID for frontend actions
+            f['file_id'] = f['id']
         categorized = {
             "Images": [f for f in files if f['category'] == "Images"],
             "Documents": [f for f in files if f['category'] == "Documents"],
             "Videos": [f for f in files if f['category'] == "Videos"],
+            "Audio": [f for f in files if f['category'] == "Audio"],
             "Other": [f for f in files if f['category'] == "Other"]
         }
         logger.info(f"Listed files for {current_user.email}: {len(files)} files found")
@@ -272,11 +281,10 @@ def search_files():
     query = request.args.get('query', '').lower()
     try:
         files = File.get_files(current_user.email)
-        # Remove unique suffix for search and include file ID
         filtered = [f for f in files if query in '_'.join(f['filename'].split('_')[:-1]).lower()]
         for f in filtered:
             f['display_filename'] = '_'.join(f['filename'].split('_')[:-1])
-            f['file_id'] = f['id']  # Include file ID for frontend actions
+            f['file_id'] = f['id']
         logger.info(f"Searched files for {current_user.email} with query '{query}': {len(filtered)} results")
         return jsonify({"success": True, "files": filtered})
     except Exception as e:
@@ -293,7 +301,7 @@ def stats():
         total_files = len(files)
         total_size = sum(f['size_mb'] for f in files) if files else 0.0
         
-        user = User.get_user(current_user.email)
+        user = User.get_user_by_email(current_user.email)  # Changed from get_user to get_user_by_email
         if user is None:
             raise ValueError("User not found")
         
@@ -302,7 +310,7 @@ def stats():
             user.save()
             logger.warning(f"Corrected storage_used for {current_user.email} to match total_size: {total_size} MB")
         
-        logger.info(f"Stats for {current_user.email}: Files: {total_files}, Total Size: {total_size} MB, Storage Used: {user.storage_used} MB")
+        logger.info(f"Stats for {current_user.email}: Files: {total_files}, Total Size: {total_size} MB, Storage Used: {user.storage_used:.2f} MB")
         return jsonify({
             "success": True,
             "total_files": total_files,
@@ -313,6 +321,9 @@ def stats():
         logger.error(f"Stats failed for {current_user.email}: {str(e)}", exc_info=True)
         return jsonify({"error": f"Failed to fetch stats: {str(e)}"}), 500
 
+def get_file_by_id(file_id, user_email):
+    files = File.get_files(user_email)
+    return next((f for f in files if f['id'] == file_id), None)
 
 @app.route("/download/<file_id>", methods=["GET"])
 @login_required
@@ -335,35 +346,49 @@ def download(file_id):
             if not all(field in chunk for field in required_fields):
                 raise ValueError("Chunk data missing required fields")
         
-        file_manager.download_file(file['filename'], chunks, output_path)
+        file_manager = FileManager(current_user)
+        file_manager.download_file(file['filename'], chunks, output_path, current_user.email)
         
         if not os.path.exists(output_path):
             raise FileNotFoundError("File reconstruction failed")
             
         base_filename = '_'.join(file['filename'].split('_')[:-1])
         mime_type = mimetypes.guess_type(base_filename)[0] or "application/octet-stream"
+        
+        download_files[base_filename] = output_path
         logger.info(f"Downloaded {file['filename']} for {current_user.email}")
-        response = send_file(
+        
+        return send_file(
             output_path,
             as_attachment=True,
             mimetype=mime_type,
             download_name=base_filename
         )
-        # Delay cleanup to avoid PermissionError
-        def cleanup():
-            try:
-                if os.path.exists(output_path):
-                    os.remove(output_path)
-                    logger.info(f"Cleaned up download file: {output_path}")
-            except Exception as e:
-                logger.error(f"Failed to clean up {output_path}: {str(e)}")
-        
-        from threading import Timer
-        Timer(5.0, cleanup).start()  # Cleanup after 5 seconds
-        return response
         
     except Exception as e:
         logger.error(f"Download failed for file ID {file_id}: {str(e)}", exc_info=True)
+        if 'output_path' in locals() and os.path.exists(output_path):
+            try:
+                os.remove(output_path)
+                logger.info(f"Cleaned up {output_path} in exception handler")
+            except Exception as cleanup_error:
+                logger.error(f"Cleanup failed in exception block: {str(cleanup_error)}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/cleanup_download/<filename>", methods=["POST"])
+@login_required
+def cleanup_download(filename):
+    try:
+        if filename in download_files:
+            output_path = download_files.pop(filename)
+            if os.path.exists(output_path):
+                os.remove(output_path)
+                logger.info(f"Cleaned up download file: {output_path}")
+            return jsonify({"success": True, "message": "Download file cleaned up"}), 200
+        logger.warning(f"File {filename} not found in download cache")
+        return jsonify({"error": "File not found in download cache"}), 404
+    except Exception as e:
+        logger.error(f"Cleanup failed for {filename}: {str(e)}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 @app.route("/preview/<file_id>", methods=["GET"])
@@ -387,7 +412,8 @@ def preview(file_id):
             if not all(field in chunk for field in required_fields):
                 raise ValueError("Chunk data missing required fields")
         
-        file_manager.download_file(file['filename'], chunks, output_path)
+        file_manager = FileManager(current_user)
+        file_manager.download_file(file['filename'], chunks, output_path, current_user.email)
         
         if not os.path.exists(output_path):
             raise FileNotFoundError("File reconstruction failed")
@@ -433,21 +459,243 @@ def delete(file_id):
             logger.error(f"File with ID {file_id} not found for {current_user.email}")
             return jsonify({"error": "File not found"}), 404
             
-        file_manager.delete_file(file['filename'], file['chunk_ids'], current_user.email)
+        file_manager = FileManager(current_user)
+        success = file_manager.delete_file(file['filename'], file['chunk_ids'], current_user.email)
         
-        user = User.get_user(current_user.email)
+        if not success:
+            logger.error(f"Failed to delete all chunks for {file['filename']} from storage providers")
+            return jsonify({"error": "Failed to delete file from all providers"}), 500
+        
+        user = User.get_user_by_email(current_user.email)  # Changed from get_user to get_user_by_email
         user.update_storage_used(-file['size_mb'])
         user.save()
-        logger.info(f"Deleted {file['filename']}, New Storage Used: {user.storage_used} MB")
+        logger.info(f"Deleted {file['filename']} from providers, New Storage Used: {user.storage_used:.2f} MB")
         
         File.delete_file(file['id'])
+        ai_agent.delete_content(file['id'])
+        logger.info(f"Deleted {file['filename']} from Firestore and Firestore content")
+        return jsonify({"success": True, "message": "File deleted"}), 200
         
-        return jsonify({"success": True, "message": "File deleted successfully"})
     except Exception as e:
         logger.error(f"Delete failed for file ID {file_id}: {str(e)}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
-if __name__ == "__main__":
-    UserRepository.init_db()
+@app.route('/storage_accounts', methods=['GET', 'POST', 'DELETE'])
+@login_required
+def manage_storage_accounts():
+    if request.method == 'GET':
+        try:
+            user = User.get_user_by_email(current_user.email)  # Changed from get_user to get_user_by_email
+            return jsonify({
+                "success": True,
+                "storage_accounts": user.get_storage_accounts_info(),
+                "total_storage": user.get_total_available_storage()
+            })
+        except Exception as e:
+            logger.error(f"Failed to get storage accounts: {str(e)}")
+            return jsonify({"error": str(e)}), 500
+
+    elif request.method == 'POST':
+        data = request.get_json() or request.form
+        provider_type = data.get('provider_type')
+        email = data.get('email')
+        
+        if not provider_type or not email:
+            return jsonify({"error": "Provider type and email are required"}), 400
+        
+        user = User.get_user_by_email(current_user.email)  # Changed from get_user to get_user_by_email
+        if any(acc['email'] == email and acc['provider_type'] == provider_type 
+               for acc in user.storage_accounts):
+            return jsonify({"error": "This account is already added"}), 400
+        
+        account = user.add_storage_account(provider_type, email, status='initializing')
+        if not user.save():
+            return jsonify({"error": "Failed to initialize storage account"}), 500
+        
+        session['pending_storage_account'] = account['id']
+        
+        if provider_type == 'google_drive':
+            auth_url = (
+                f"https://accounts.google.com/o/oauth2/auth?"
+                f"client_id={GOOGLE_CLIENT_ID}&"
+                f"redirect_uri={GOOGLE_REDIRECT_URI}&"
+                f"scope=https://www.googleapis.com/auth/drive&"
+                f"response_type=code&"
+                f"state={account['id']}&"
+                f"access_type=offline&"
+                f"prompt=consent&"
+                f"login_hint={email}"
+            )
+            return jsonify({
+                "success": True,
+                "auth_url": auth_url,
+                "message": "Redirect to Google for authorization"
+            })
+        
+        elif provider_type == 'dropbox':
+            auth_url = (
+                f"https://www.dropbox.com/oauth2/authorize?"
+                f"client_id={DROPBOX_CLIENT_ID}&"
+                f"redirect_uri={DROPBOX_REDIRECT_URI}&"
+                f"response_type=code&"
+                f"state={account['id']}&"
+                f"token_access_type=offline"  # Ensure refresh token is requested
+            )
+            return jsonify({
+                "success": True,
+                "auth_url": auth_url,
+                "message": "Redirect to Dropbox for authorization"
+            })
+        
+        return jsonify({"error": "Unsupported provider"}), 400
+
+    elif request.method == 'DELETE':
+        account_id = request.args.get('account_id')
+        if not account_id:
+            return jsonify({"error": "Account ID required"}), 400
+            
+        user = User.get_user_by_email(current_user.email)  # Changed from get_user to get_user_by_email
+        account = next((acc for acc in user.storage_accounts if acc['id'] == account_id), None)
+        if not account:
+            return jsonify({"error": "Account not found"}), 404
+            
+        user.storage_accounts = [acc for acc in user.storage_accounts if acc['id'] != account_id]
+        if not user.save():
+            return jsonify({"error": "Failed to delete storage account"}), 500
+            
+        return jsonify({"success": True, "message": "Storage account deleted"})
+
+@app.route('/oauth/google/callback')
+@login_required
+def google_oauth_callback():
+    try:
+        code = request.args.get('code')
+        state = request.args.get('state')
+        if not code or not state:
+            return jsonify({"error": "Authorization failed"}), 400
+        
+        token_url = "https://oauth2.googleapis.com/token"
+        data = {
+            'code': code,
+            'client_id': GOOGLE_CLIENT_ID,
+            'client_secret': GOOGLE_CLIENT_SECRET,
+            'redirect_uri': GOOGLE_REDIRECT_URI,
+            'grant_type': 'authorization_code'
+        }
+        response = requests.post(token_url, data=data, timeout=10)
+        response.raise_for_status()
+        token_data = response.json()
+        
+        user = User.get_user_by_email(current_user.email)  # Changed from get_user to get_user_by_email
+        account = next((acc for acc in user.storage_accounts if acc['id'] == state), None)
+        if not account:
+            return jsonify({"error": "Storage account not found"}), 404
+        
+        account['credentials'] = {
+            'access_token': token_data['access_token'],
+            'refresh_token': token_data.get('refresh_token'),
+            'expires_in': token_data['expires_in'],
+            'expires_at': time.time() + token_data['expires_in'] - 60
+        }
+        account['status'] = 'connected'
+        account['is_active'] = True
+        
+        user.update_storage_quota()
+        if not user.save():
+            return jsonify({"error": "Failed to save account"}), 500
+        
+        session.pop('pending_storage_account', None)
+        return redirect('/dashboard?storage=connected')
+    except Exception as e:
+        logger.error(f"Google OAuth callback failed: {str(e)}")
+        user = User.get_user_by_email(current_user.email)  # Changed from get_user to get_user_by_email
+        account = next((acc for acc in user.storage_accounts if acc['id'] == state), None)
+        if account:
+            account['status'] = 'failed'
+            account['error'] = str(e)
+            user.save()
+        return redirect('/dashboard?storage=failed')
+
+@app.route('/oauth/dropbox/callback')
+@login_required
+def dropbox_oauth_callback():
+    try:
+        code = request.args.get('code')
+        state = request.args.get('state')
+        if not code or not state:
+            return jsonify({"error": "Authorization failed"}), 400
+        
+        token_url = "https://api.dropboxapi.com/oauth2/token"
+        data = {
+            'code': code,
+            'client_id': DROPBOX_CLIENT_ID,
+            'client_secret': DROPBOX_CLIENT_SECRET,
+            'redirect_uri': DROPBOX_REDIRECT_URI,
+            'grant_type': 'authorization_code'
+        }
+        response = requests.post(token_url, data=data, timeout=10)
+        response.raise_for_status()
+        token_data = response.json()
+        
+        logger.info(f"Dropbox OAuth response: {token_data}")
+        if 'refresh_token' not in token_data:
+            logger.error(f"No refresh token received for Dropbox account (state: {state})")
+        
+        user = User.get_user_by_email(current_user.email)
+        account = next((acc for acc in user.storage_accounts if acc['id'] == state), None)
+        if not account:
+            return jsonify({"error": "Storage account not found"}), 404
+        
+        account['credentials'] = {
+            'access_token': token_data['access_token'],
+            'refresh_token': token_data.get('refresh_token'),
+            'expires_in': token_data.get('expires_in', 14400),
+            'expires_at': time.time() + token_data.get('expires_in', 14400) - 60
+        }
+        account['status'] = 'connected'
+        account['is_active'] = True
+        
+        user.update_storage_quota()
+        if not user.save():
+            return jsonify({"error": "Failed to save account"}), 500
+        
+        session.pop('pending_storage_account', None)
+        return redirect('/dashboard?storage=connected')
+    except Exception as e:
+        logger.error(f"Dropbox OAuth callback failed: {str(e)}", exc_info=True)
+        user = User.get_user_by_email(current_user.email)
+        account = next((acc for acc in user.storage_accounts if acc['id'] == state), None)
+        if account:
+            account['status'] = 'failed'
+            account['error'] = str(e)
+            user.save()
+        return redirect('/dashboard?storage=failed')
+
+@app.route('/ai/ask', methods=['POST'])
+@login_required
+def ai_ask():
+    try:
+        data = request.get_json()
+        query = data.get('question')
+        if not query:
+            return jsonify({"error": "Question required"}), 400
+            
+        logger.info(f"AI query from {current_user.email}: {query}")
+        
+        # Get user files for context
+        files = File.get_files(current_user.email)
+        if files is None:
+            files = []
+        
+        # Use AIAgent to process query
+        answer = ai_agent.answer_query(query, current_user.email, files)
+        
+        return jsonify({"success": True, "answer": answer})
+        
+    except Exception as e:
+        logger.error(f"AI query failed for {current_user.email}: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
-    app.run(debug=os.getenv('FLASK_ENV') == 'development', host='0.0.0.0', port=port)
+    app.run(debug=os.getenv('FLASK_ENV') == 'development', port=port)
